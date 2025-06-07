@@ -1,0 +1,199 @@
+/* Theme CSS Variables and Base Styles */
+
+:root {
+  /* Light theme colors */
+  --theme-bg-primary: #ffffff;
+  --theme-bg-secondary: #f9fafb;
+  --theme-bg-tertiary: #f3f4f6;
+  --theme-bg-elevated: #ffffff;
+  
+  --theme-text-primary: #111827;
+  --theme-text-secondary: #6b7280;
+  --theme-text-tertiary: #9ca3af;
+  --theme-text-inverse: #ffffff;
+  
+  --theme-border-primary: #e5e7eb;
+  --theme-border-secondary: #d1d5db;
+  --theme-border-focus: #3b82f6;
+  
+  --theme-accent-primary: #3b82f6;
+  --theme-accent-primary-hover: #2563eb;
+  --theme-accent-secondary: #6366f1;
+  
+  --theme-success: #059669;
+  --theme-success-bg: #ecfdf5;
+  --theme-warning: #d97706;
+  --theme-warning-bg: #fffbeb;
+  --theme-error: #dc2626;
+  --theme-error-bg: #fef2f2;
+  --theme-info: #2563eb;
+  --theme-info-bg: #eff6ff;
+  
+  --theme-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --theme-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --theme-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark theme colors */
+  --theme-bg-primary: #0f172a;
+  --theme-bg-secondary: #1e293b;
+  --theme-bg-tertiary: #334155;
+  --theme-bg-elevated: #1e293b;
+  
+  --theme-text-primary: #f9fafb;
+  --theme-text-secondary: #d1d5db;
+  --theme-text-tertiary: #9ca3af;
+  --theme-text-inverse: #0f172a;
+  
+  --theme-border-primary: #334155;
+  --theme-border-secondary: #475569;
+  --theme-border-focus: #60a5fa;
+  
+  --theme-accent-primary: #60a5fa;
+  --theme-accent-primary-hover: #3b82f6;
+  --theme-accent-secondary: #818cf8;
+  
+  --theme-success: #10b981;
+  --theme-success-bg: #064e3b;
+  --theme-warning: #f59e0b;
+  --theme-warning-bg: #451a03;
+  --theme-error: #ef4444;
+  --theme-error-bg: #7f1d1d;
+  --theme-info: #3b82f6;
+  --theme-info-bg: #1e3a8a;
+  
+  --theme-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --theme-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --theme-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+}
+
+/* Base theme utility classes */
+.theme-bg-primary { background-color: var(--theme-bg-primary); }
+.theme-bg-secondary { background-color: var(--theme-bg-secondary); }
+.theme-bg-tertiary { background-color: var(--theme-bg-tertiary); }
+.theme-bg-elevated { background-color: var(--theme-bg-elevated); }
+
+.theme-text-primary { color: var(--theme-text-primary); }
+.theme-text-secondary { color: var(--theme-text-secondary); }
+.theme-text-tertiary { color: var(--theme-text-tertiary); }
+.theme-text-inverse { color: var(--theme-text-inverse); }
+
+.theme-border-primary { border-color: var(--theme-border-primary); }
+.theme-border-secondary { border-color: var(--theme-border-secondary); }
+.theme-border-focus { border-color: var(--theme-border-focus); }
+.theme-border-info { border-color: var(--theme-info); }
+.theme-border-success { border-color: var(--theme-success); }
+.theme-border-warning { border-color: var(--theme-warning); }
+.theme-border-error { border-color: var(--theme-error); }
+
+.theme-accent-primary { color: var(--theme-accent-primary); }
+.theme-accent-primary-bg { background-color: var(--theme-accent-primary); }
+.theme-accent-hover { color: var(--theme-accent-primary-hover); }
+.theme-accent-bg-light { background-color: var(--theme-info-bg); }
+
+.theme-success { color: var(--theme-success); }
+.theme-success-bg { background-color: var(--theme-success-bg); }
+.theme-success-bg-light { background-color: var(--theme-success-bg); }
+.theme-warning { color: var(--theme-warning); }
+.theme-warning-bg { background-color: var(--theme-warning-bg); }
+.theme-error { color: var(--theme-error); }
+.theme-error-bg { background-color: var(--theme-error-bg); }
+.theme-info { color: var(--theme-info); }
+.theme-info-bg { background-color: var(--theme-info-bg); }
+
+.theme-shadow-sm { box-shadow: var(--theme-shadow-sm); }
+.theme-shadow { box-shadow: var(--theme-shadow); }
+.theme-shadow-lg { box-shadow: var(--theme-shadow-lg); }
+
+/* Focus states */
+.focus\:theme-border-focus:focus { border-color: var(--theme-border-focus); }
+.focus\:theme-ring-focus:focus { box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1); }
+
+/* Hover states */
+.hover\:theme-bg-secondary:hover { background-color: var(--theme-bg-secondary); }
+.hover\:theme-accent-hover:hover { color: var(--theme-accent-primary-hover); }
+
+/* Theme-aware component overrides */
+.theme-card {
+  background-color: var(--theme-bg-elevated);
+  border-color: var(--theme-border-primary);
+  box-shadow: var(--theme-shadow);
+  color: var(--theme-text-primary);
+}
+
+.theme-navbar {
+  background-color: var(--theme-bg-elevated);
+  border-color: var(--theme-border-primary);
+  box-shadow: var(--theme-shadow-sm);
+}
+
+.theme-input {
+  background-color: var(--theme-bg-primary);
+  border-color: var(--theme-border-primary);
+  color: var(--theme-text-primary);
+}
+
+.theme-input:focus {
+  border-color: var(--theme-border-focus);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+}
+
+.theme-button-primary {
+  background-color: var(--theme-accent-primary);
+  color: var(--theme-text-inverse);
+}
+
+.theme-button-primary:hover {
+  background-color: var(--theme-accent-primary-hover);
+}
+
+.theme-button-secondary {
+  background-color: var(--theme-bg-secondary);
+  color: var(--theme-text-primary);
+  border-color: var(--theme-border-primary);
+}
+
+.theme-button-secondary:hover {
+  background-color: var(--theme-bg-tertiary);
+}
+
+/* Smooth theme transitions */
+* {
+  transition: background-color 0.2s ease-in-out, 
+              border-color 0.2s ease-in-out, 
+              color 0.2s ease-in-out,
+              box-shadow 0.2s ease-in-out;
+}
+
+/* Page layout theme support */
+.theme-page {
+  background-color: var(--theme-bg-secondary);
+  color: var(--theme-text-primary);
+  min-height: 100vh;
+}
+
+/* Alert theme variants */
+.theme-alert-success {
+  background-color: var(--theme-success-bg);
+  color: var(--theme-success);
+  border-color: var(--theme-success);
+}
+
+.theme-alert-warning {
+  background-color: var(--theme-warning-bg);
+  color: var(--theme-warning);
+  border-color: var(--theme-warning);
+}
+
+.theme-alert-error {
+  background-color: var(--theme-error-bg);
+  color: var(--theme-error);
+  border-color: var(--theme-error);
+}
+
+.theme-alert-info {
+  background-color: var(--theme-info-bg);
+  color: var(--theme-info);
+  border-color: var(--theme-info);
+}

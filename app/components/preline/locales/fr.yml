@@ -1,0 +1,54 @@
+fr:
+  preline:
+    # Extension components
+    language_switcher:
+      english: "Anglais"
+      dutch: "Néerlandais"
+      german: "Allemand"
+      french: "Français"
+      spanish: "Espagnol"
+      portuguese: "Portugais"
+    
+    theme_toggle:
+      light: "Clair"
+      dark: "Sombre"
+      system: "Système"
+    
+    # Core components - UI text that could be internationalized
+    pagination:
+      showing: "Affichage de"
+      of: " sur "
+      results: " résultats"
+      first_page: "Première page"
+      previous_page: "Page précédente"
+      previous: "Précédent"
+      next_page: "Page suivante"
+      next: "Suivant"
+      last_page: "Dernière page"
+      ellipsis: "..."
+    
+    modal:
+      close: "Fermer"
+    
+    file_input:
+      browse: "Parcourir"
+      or_drag_drop: "ou glisser-déposer"
+    
+    # Common component text
+    common:
+      loading: "Chargement..."
+      error: "Erreur"
+      success: "Succès"
+      warning: "Avertissement"
+      info: "Info"
+      close: "Fermer"
+      open: "Ouvrir"
+      toggle: "Basculer"
+      expand: "Développer"
+      collapse: "Réduire"
+      select: "Sélectionner"
+      selected: "Sélectionné"
+      search: "Rechercher"
+      filter: "Filtrer"
+      sort: "Trier"
+      actions: "Actions"

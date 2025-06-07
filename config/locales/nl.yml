@@ -1,0 +1,54 @@
+nl:
+  preline:
+    # Extension components
+    language_switcher:
+      english: "Engels"
+      dutch: "Nederlands"
+      german: "Duits"
+      french: "Frans"
+      spanish: "Spaans"
+      portuguese: "Portugees"
+    
+    theme_toggle:
+      light: "Licht"
+      dark: "Donker"
+      system: "Systeem"
+    
+    # Core components - UI text that could be internationalized
+    pagination:
+      showing: "Toont"
+      of: " van "
+      results: " resultaten"
+      first_page: "Eerste pagina"
+      previous_page: "Vorige pagina"
+      previous: "Vorige"
+      next_page: "Volgende pagina"
+      next: "Volgende"
+      last_page: "Laatste pagina"
+      ellipsis: "..."
+    
+    modal:
+      close: "Sluiten"
+    
+    file_input:
+      browse: "Bladeren"
+      or_drag_drop: "of sleep en zet neer"
+    
+    # Common component text
+    common:
+      loading: "Laden..."
+      error: "Fout"
+      success: "Geslaagd"
+      warning: "Waarschuwing"
+      info: "Info"
+      close: "Sluiten"
+      open: "Openen"
+      toggle: "Schakelen"
+      expand: "Uitvouwen"
+      collapse: "Inklappen"
+      select: "Selecteren"
+      selected: "Geselecteerd"
+      search: "Zoeken"
+      filter: "Filteren"
+      sort: "Sorteren"
+      actions: "Acties"

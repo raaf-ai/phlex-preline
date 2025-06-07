@@ -1,0 +1,48 @@
+# RuboCop configuration for Preline gem
+
+AllCops:
+  SuggestExtensions: false
+  TargetRubyVersion: 2.7
+  NewCops: enable
+  Exclude:
+    - 'vendor/**/*'
+    - 'spec/**/*'
+    - 'bin/**/*'
+
+# Allow hyphenated filenames for gem entry points
+Naming/FileName:
+  Exclude:
+    - 'lib/phlex-preline.rb'
+
+Layout/LineLength:
+  Enabled: false
+
+Metrics:
+  Enabled: false
+
+# Disable documentation for ViewComponent classes
+Style/Documentation:
+  Exclude:
+    - 'app/components/**/*'
+    - 'lib/preline.rb'
+    - 'lib/phlex-preline.rb'
+    - 'lib/preline/engine.rb'
+
+# Allow components to skip super in initialize
+Lint/MissingSuper:
+  Exclude:
+    - 'app/components/**/*'
+
+# Component-specific naming conventions
+Naming/PredicatePrefix:
+  Exclude:
+    - 'app/components/**/*'
+
+# Allow short parameter names for common cases
+Naming/MethodParameterName:
+  AllowedNames:
+    - sm
+    - md
+    - lg
+    - xl
+    - id

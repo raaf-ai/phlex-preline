@@ -1,0 +1,55 @@
+name: Security
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 1'
+
+jobs:
+  brakeman:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+
+    - name: Install Brakeman
+      run: gem install brakeman
+
+    - name: Run Brakeman
+      run: brakeman --no-pager --no-exit-on-warn --no-exit-on-error --format json --output brakeman-output.json || true
+
+    - name: Upload Brakeman results
+      uses: actions/upload-artifact@v4
+      with:
+        name: brakeman-results
+        path: brakeman-output.json
+        retention-days: 7
+
+  bundle-audit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+
+    - name: Install bundle-audit
+      run: gem install bundle-audit
+
+    - name: Check for vulnerable dependencies
+      run: |
+        bundle-audit check --update
+        
+    - name: Check for insecure sources
+      run: bundle-audit check --verbose

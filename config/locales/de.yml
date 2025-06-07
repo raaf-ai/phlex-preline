@@ -1,0 +1,54 @@
+de:
+  preline:
+    # Extension components
+    language_switcher:
+      english: "Englisch"
+      dutch: "Niederländisch"
+      german: "Deutsch"
+      french: "Französisch"
+      spanish: "Spanisch"
+      portuguese: "Portugiesisch"
+    
+    theme_toggle:
+      light: "Hell"
+      dark: "Dunkel"
+      system: "System"
+    
+    # Core components - UI text that could be internationalized
+    pagination:
+      showing: "Zeige"
+      of: " von "
+      results: " Ergebnissen"
+      first_page: "Erste Seite"
+      previous_page: "Vorherige Seite"
+      previous: "Zurück"
+      next_page: "Nächste Seite"
+      next: "Weiter"
+      last_page: "Letzte Seite"
+      ellipsis: "..."
+    
+    modal:
+      close: "Schließen"
+    
+    file_input:
+      browse: "Durchsuchen"
+      or_drag_drop: "oder per Drag & Drop"
+    
+    # Common component text
+    common:
+      loading: "Lädt..."
+      error: "Fehler"
+      success: "Erfolg"
+      warning: "Warnung"
+      info: "Info"
+      close: "Schließen"
+      open: "Öffnen"
+      toggle: "Umschalten"
+      expand: "Erweitern"
+      collapse: "Einklappen"
+      select: "Auswählen"
+      selected: "Ausgewählt"
+      search: "Suchen"
+      filter: "Filtern"
+      sort: "Sortieren"
+      actions: "Aktionen"

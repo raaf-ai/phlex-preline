@@ -1,0 +1,20 @@
+name: 'Dependency Review'
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    # Only run if Advanced Security is enabled
+    if: github.repository == 'enterprisemodules/preline' && github.event.repository.visibility == 'public'
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v4
+        
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@v4
+        continue-on-error: true
