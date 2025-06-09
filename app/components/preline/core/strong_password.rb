@@ -53,54 +53,51 @@ module Components
       # @param data [Hash] Data attributes
       # @param attrs [Hash] Additional HTML attributes
       def initialize(name:, **attrs)
-        @name = name
+        @name = validate_required!(name, 'name')
 
         # Extract component-specific attributes
         @value = attrs.delete(:value)
         @label = attrs.delete(:label)
         @placeholder = attrs.delete(:placeholder)
-        @required = attrs.delete(:required) || false
-        @disabled = attrs.delete(:disabled) || false
+        @required = validate_boolean!(attrs.delete(:required) || false, 'required')
+        @disabled = validate_boolean!(attrs.delete(:disabled) || false, 'disabled')
 
-        # Extract standard HTML attributes
-        @id = attrs.delete(:id) || "strong_password_#{name}_#{SecureRandom.hex(4)}"
-        @custom_class = attrs.delete(:class)
-        @html_attrs = attrs.slice(:data, :aria, :role)
+        # Extract id before initialize_component
+        @component_id = attrs.delete(:id) || "strong_password_#{name}_#{SecureRandom.hex(4)}"
 
-        # Remaining attributes
-        @options = attrs.except(:data, :aria, :role, :class)
+        # Use secure attribute extraction
+        initialize_component(attrs)
       end
 
       def view_template
         div(class: wrapper_classes) do
           if @label
-            label(for: @id, class: label_classes) do
+            label(for: @component_id, class: label_classes) do
               text @label
               span(class: 'text-red-500 ml-1') { '*' } if @required
             end
           end
 
-          input_attributes = build_attributes.merge(
+          attrs = {
             type: 'password',
-            id: @id,
+            id: @component_id,
             name: @name,
             value: @value,
             placeholder: @placeholder,
-            required: @required,
-            disabled: @disabled,
-            class: input_classes,
-            data: {
-              'hs-strong-password-target': '',
-              'hs-strong-password': "{
-                \"target\": \"##{@id}-helper\",
-                \"stripClasses\": \"hs-strong-password-strip:opacity-100\"
-              }"
-            }
-          )
+            'data-hs-strong-password-target': '',
+            'data-hs-strong-password': "{
+              \"target\": \"##{@component_id}-helper\",
+              \"stripClasses\": \"hs-strong-password-strip:opacity-100\"
+            }"
+          }
+          attrs[:required] = @required if @required
+          attrs[:disabled] = @disabled if @disabled
 
-          input(**input_attributes)
+          input_attrs = component_attributes(additional_classes: input_classes, additional_attrs: attrs)
 
-          div(id: "#{@id}-helper", class: 'hs-strong-password-helper mt-2') do
+          input(**input_attrs)
+
+          div(id: "#{@component_id}-helper", class: 'hs-strong-password-helper mt-2') do
             div(class: 'flex space-x-1 mb-2') do
               (1..4).each do |i|
                 div(
@@ -152,12 +149,7 @@ module Components
       end
 
       def input_classes
-        base = 'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-        [base, @custom_class].compact.join(' ')
-      end
-
-      def build_attributes
-        @html_attrs.merge(@options)
+        'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500'
       end
 
       def check_icon

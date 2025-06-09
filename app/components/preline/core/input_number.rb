@@ -60,7 +60,7 @@ module Components
       # @param data [Hash] Data attributes
       # @param attrs [Hash] Additional HTML attributes
       def initialize(name:, **attrs)
-        @name = name
+        @name = validate_required!(name, 'name')
 
         # Extract component-specific attributes
         @value = attrs.delete(:value) || 0
@@ -68,21 +68,19 @@ module Components
         @max = attrs.delete(:max)
         @step = attrs.delete(:step) || 1
         @label = attrs.delete(:label)
-        @disabled = attrs.delete(:disabled) || false
-        @readonly = attrs.delete(:readonly) || false
+        @disabled = validate_boolean!(attrs.delete(:disabled) || false, 'disabled')
+        @readonly = validate_boolean!(attrs.delete(:readonly) || false, 'readonly')
 
-        # Extract standard HTML attributes
-        @id = attrs.delete(:id) || "input_number_#{name}_#{SecureRandom.hex(4)}"
-        @custom_class = attrs.delete(:class)
-        @html_attrs = attrs.slice(:data, :aria, :role)
+        # Extract id before initialize_component
+        @component_id = attrs.delete(:id) || "input_number_#{name}_#{SecureRandom.hex(4)}"
 
-        # Remaining attributes
-        @options = attrs.except(:data, :aria, :role, :class)
+        # Use secure attribute extraction
+        initialize_component(attrs)
       end
 
       def view_template
         div(class: wrapper_classes) do
-          label(for: @id, class: label_classes) { @label } if @label
+          label(for: @component_id, class: label_classes) { @label } if @label
 
           div(class: 'hs-input-number', data: { 'hs-input-number': '' }) do
             div(class: 'flex') do
@@ -95,21 +93,22 @@ module Components
                 minus_icon
               end
 
-              input_attributes = build_attributes.merge(
+              attrs = {
                 type: 'number',
-                id: @id,
+                id: @component_id,
                 name: @name,
                 value: @value,
                 min: @min,
                 max: @max,
                 step: @step,
-                disabled: @disabled,
-                readonly: @readonly,
-                class: input_classes,
-                data: { 'hs-input-number-input': '' }
-              )
+                'data-hs-input-number-input': ''
+              }
+              attrs[:disabled] = @disabled if @disabled
+              attrs[:readonly] = @readonly if @readonly
 
-              input(**input_attributes)
+              input_attrs = component_attributes(additional_classes: input_classes, additional_attrs: attrs)
+
+              input(**input_attrs)
 
               button(
                 type: 'button',
@@ -137,12 +136,7 @@ module Components
       end
 
       def input_classes
-        base = 'hs-input-number-field text-center w-20 py-2 px-3 block border-gray-200 text-gray-800'
-        [base, @custom_class].compact.join(' ')
-      end
-
-      def build_attributes
-        @html_attrs.merge(@options)
+        'hs-input-number-field text-center w-20 py-2 px-3 block border-gray-200 text-gray-800'
       end
 
       def button_classes(type)

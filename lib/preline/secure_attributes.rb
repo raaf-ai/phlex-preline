@@ -6,8 +6,11 @@ module Phlex
     module SecureAttributes
       extend ActiveSupport::Concern
 
-      # Whitelist of allowed HTML attributes
-      ALLOWED_HTML_ATTRIBUTES = %i[
+      # Class method to configure security settings
+      mattr_accessor :bypass_security_checks, default: false
+
+      # Default whitelist of allowed HTML attributes
+      DEFAULT_ALLOWED_HTML_ATTRIBUTES = %i[
         id class title lang dir tabindex
         placeholder disabled readonly required
         rows cols maxlength minlength pattern
@@ -20,24 +23,32 @@ module Phlex
         style
       ].freeze
 
-      # Whitelist of allowed data attributes (without data- prefix)
-      ALLOWED_DATA_ATTRIBUTES = %w[
+      # Default whitelist of allowed data attributes (without data- prefix)
+      DEFAULT_ALLOWED_DATA_ATTRIBUTES = %w[
         controller action target
         turbo turbo-frame turbo-permanent turbo-temporary
-        dismiss-target toggle-target
+        dismiss-target toggle-target form-submit-target
         hs-alert hs-alert-close
         method track confirm remote
         section layout
       ].freeze
 
-      # Whitelist of allowed ARIA attributes (without aria- prefix)
-      ALLOWED_ARIA_ATTRIBUTES = %w[
+      # Default whitelist of allowed ARIA attributes (without aria- prefix)
+      DEFAULT_ALLOWED_ARIA_ATTRIBUTES = %w[
         label labelledby describedby controls
         expanded hidden disabled checked pressed
         current level valuemin valuemax valuenow
         modal live atomic relevant busy
         haspopup owns flowto errormessage
       ].freeze
+
+      # Configurable allow lists
+      mattr_accessor :allowed_html_attributes, default: DEFAULT_ALLOWED_HTML_ATTRIBUTES.dup
+      mattr_accessor :allowed_data_attributes, default: DEFAULT_ALLOWED_DATA_ATTRIBUTES.dup
+      mattr_accessor :allowed_aria_attributes, default: DEFAULT_ALLOWED_ARIA_ATTRIBUTES.dup
+
+      # Additional patterns for data attributes
+      mattr_accessor :allowed_data_patterns, default: []
 
       private
 
@@ -54,12 +65,15 @@ module Phlex
 
       # Sanitize standard HTML attributes
       def sanitize_html_attributes(attrs)
-        attrs.slice(*ALLOWED_HTML_ATTRIBUTES).transform_values { |v| sanitize_value(v) }
+        attrs.slice(*SecureAttributes.allowed_html_attributes).transform_values { |v| sanitize_value(v) }
       end
 
       # Sanitize data attributes
       def sanitize_data_attributes(data_attrs)
         return {} unless data_attrs.is_a?(Hash)
+
+        # Bypass security checks if configured
+        return data_attrs.transform_values { |v| sanitize_value(v) } if Phlex::Preline::SecureAttributes.bypass_security_checks
 
         data_attrs.select { |k, _| allowed_data_attribute?(k) }
                   .transform_values { |v| sanitize_value(v) }
@@ -81,18 +95,31 @@ module Phlex
         # Explicitly block dangerous attributes
         return false if key.match?(/^on\w+$/i) # Block onclick, onmouseover, etc.
 
-        ALLOWED_DATA_ATTRIBUTES.include?(key) ||
-          key.start_with?('turbo') || # Turbo/Hotwire attributes
+        # Check against configured allow list
+        return true if SecureAttributes.allowed_data_attributes.include?(key)
+
+        # Check against additional patterns
+        SecureAttributes.allowed_data_patterns.each do |pattern|
+          return true if pattern.is_a?(Regexp) ? key.match?(pattern) : key.include?(pattern.to_s)
+        end
+
+        # Default patterns
+        key.start_with?('turbo') || # Turbo/Hotwire attributes
           key.start_with?('bs-') || # Bootstrap data attributes
           key.start_with?('hs-') || # Preline/HyperScript data attributes
-          key.match?(/^(test|id|value|custom|zoom|lightbox|gallery|modal)$/) || # Common test/demo attributes
+          key.end_with?('-target') || # Stimulus target attributes
+          key.end_with?('-value') || # Stimulus value attributes
+          key.end_with?('-class') || # Stimulus CSS class attributes
+          key.end_with?('-outlet') || # Stimulus outlet attributes
+          key.match?(/^[\w-]+-[\w-]+-param$/) || # Stimulus param attributes
+          key.match?(/^(test|testid|id|value|custom|zoom|lightbox|gallery|modal)$/) || # Common test/demo attributes
           key.match?(/^(product|user|item|content)[-_](id|name|type|category)$/) # Common compound attributes
       end
 
       # Check if an ARIA attribute is allowed
       def allowed_aria_attribute?(key)
         key = key.to_s.sub(/^aria-/, '')
-        ALLOWED_ARIA_ATTRIBUTES.include?(key)
+        SecureAttributes.allowed_aria_attributes.include?(key)
       end
 
       # Sanitize attribute values to prevent XSS
@@ -136,15 +163,21 @@ module Phlex
 
         # Sanitize additional attributes before merging
         safe_additional_attrs = {}
-        additional_attrs.each do |k, v|
-          if k.to_s.start_with?('data-')
-            key = k.to_s.sub(/^data-/, '')
-            safe_additional_attrs[k] = sanitize_value(v) if allowed_data_attribute?(key)
-          elsif k.to_s.start_with?('aria-')
-            key = k.to_s.sub(/^aria-/, '')
-            safe_additional_attrs[k] = sanitize_value(v) if allowed_aria_attribute?(key)
-          elsif ALLOWED_HTML_ATTRIBUTES.include?(k.to_sym)
-            safe_additional_attrs[k] = sanitize_value(v)
+
+        if Phlex::Preline::SecureAttributes.bypass_security_checks
+          # When bypassing security, still sanitize values but allow all attribute names
+          safe_additional_attrs = additional_attrs.transform_values { |v| sanitize_value(v) }
+        else
+          additional_attrs.each do |k, v|
+            if k.to_s.start_with?('data-')
+              key = k.to_s.sub(/^data-/, '')
+              safe_additional_attrs[k] = sanitize_value(v) if allowed_data_attribute?(key)
+            elsif k.to_s.start_with?('aria-')
+              key = k.to_s.sub(/^aria-/, '')
+              safe_additional_attrs[k] = sanitize_value(v) if allowed_aria_attribute?(key)
+            elsif SecureAttributes.allowed_html_attributes.include?(k.to_sym)
+              safe_additional_attrs[k] = sanitize_value(v)
+            end
           end
         end
 

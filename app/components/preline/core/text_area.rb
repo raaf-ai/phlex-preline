@@ -129,8 +129,14 @@ module Components
 
         textarea_options = build_textarea_options
 
-        code_path 'Renders static textarea'
-        textarea(**textarea_options, name: @field, id: @field)
+        if @form.respond_to?(:text_area)
+          code_path 'Renders Rails form textarea'
+          textarea_html = @form.text_area(@field, **textarea_options)
+          raw(safe(textarea_html.to_s))
+        else
+          code_path 'Renders static textarea'
+          textarea(**textarea_options, name: @field, id: @field)
+        end
       end
 
       def render_help_text

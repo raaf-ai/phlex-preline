@@ -48,52 +48,51 @@ module Components
       # @param data [Hash] Data attributes
       # @param attrs [Hash] Additional HTML attributes
       def initialize(name:, **attrs)
-        @name = name
+        @name = validate_required!(name, 'name')
 
         # Extract component-specific attributes
         @value = attrs.delete(:value)
         @label = attrs.delete(:label)
         @placeholder = attrs.delete(:placeholder)
-        @required = attrs.delete(:required) || false
-        @disabled = attrs.delete(:disabled) || false
+        @required = validate_boolean!(attrs.delete(:required) || false, 'required')
+        @disabled = validate_boolean!(attrs.delete(:disabled) || false, 'disabled')
 
-        # Extract standard HTML attributes
-        @id = attrs.delete(:id) || "password_#{name}_#{SecureRandom.hex(4)}"
-        @custom_class = attrs.delete(:class)
-        @html_attrs = attrs.slice(:data, :aria, :role)
+        # Extract id before initialize_component
+        @component_id = attrs.delete(:id) || "password_#{name}_#{SecureRandom.hex(4)}"
 
-        # Remaining attributes
-        @options = attrs.except(:data, :aria, :role, :class)
+        # Use secure attribute extraction
+        initialize_component(attrs)
       end
 
       def view_template
         div(class: wrapper_classes) do
           if @label
-            label(for: @id, class: label_classes) do
+            label(for: @component_id, class: label_classes) do
               text @label
               span(class: 'text-red-500 ml-1') { '*' } if @required
             end
           end
 
           div(class: 'relative') do
-            input_attributes = build_attributes.merge(
+            attrs = {
               type: 'password',
-              id: @id,
+              id: @component_id,
               name: @name,
               value: @value,
               placeholder: @placeholder,
-              required: @required,
-              disabled: @disabled,
-              class: input_classes,
-              data: { 'hs-toggle-password-target': '' }
-            )
+              'data-hs-toggle-password-target': ''
+            }
+            attrs[:required] = @required if @required
+            attrs[:disabled] = @disabled if @disabled
 
-            input(**input_attributes)
+            input_attrs = component_attributes(additional_classes: input_classes, additional_attrs: attrs)
+
+            input(**input_attrs)
 
             button(
               type: 'button',
               class: toggle_button_classes,
-              data: { 'hs-toggle-password': "##{@id}" }
+              data: { 'hs-toggle-password': "##{@component_id}" }
             ) do
               # Hidden icon
               svg(
@@ -146,16 +145,11 @@ module Components
       end
 
       def input_classes
-        base = 'pr-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-        [base, @custom_class].compact.join(' ')
+        'pr-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500'
       end
 
       def toggle_button_classes
         'absolute inset-y-0 end-0 flex items-center z-20 px-3 cursor-pointer text-gray-400 rounded-e-md focus:outline-none focus:text-blue-600'
-      end
-
-      def build_attributes
-        @html_attrs.merge(@options)
       end
     end
   end

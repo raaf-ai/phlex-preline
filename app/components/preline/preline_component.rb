@@ -32,6 +32,9 @@ module Components
         extracted = extract_attributes(@attrs)
         attrs = merge_attributes(extracted, additional_attrs)
 
+        # Normalize additional_classes to array
+        additional_classes = Array(additional_classes).flatten.compact
+
         # Add additional classes
         if additional_classes.any?
           existing_classes = attrs[:class].to_s.split

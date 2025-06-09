@@ -151,9 +151,10 @@ module Components
       end
 
       def build_attributes
-        attrs = {
-          'data-method' => @method
-        }
+        attrs = {}
+
+        # Add data-method if specified
+        attrs['data-method'] = @method if @method
 
         # Add aria-label for icon-only buttons
         if @icon && @text.blank?
@@ -163,7 +164,7 @@ module Components
           attrs['aria-label'] = @aria_label || safe_icon.humanize
         end
 
-        component_attributes(additional_attrs: attrs.compact)
+        component_attributes(additional_attrs: attrs)
       end
 
       def render_content
