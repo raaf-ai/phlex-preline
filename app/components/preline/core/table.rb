@@ -4,7 +4,27 @@ module Components
   module Preline
     # Table component for displaying tabular data
     #
-    # @example Basic table
+    # @example Basic table with yielding interface
+    #   render Components::Preline::Table.new do |table|
+    #     table.head do |head|
+    #       head.row do |row|
+    #         row.header_cell { "Name" }
+    #         row.header_cell { "Email" }
+    #         row.header_cell { "Status" }
+    #       end
+    #     end
+    #     table.body do |body|
+    #       @users.each do |user|
+    #         body.row do |row|
+    #           row.cell { user.name }
+    #           row.cell { user.email }
+    #           row.cell { user.status }
+    #         end
+    #       end
+    #     end
+    #   end
+    #
+    # @example Table with direct components
     #   render Components::Preline::Table.new do
     #     TableHead do
     #       TableRow do
@@ -55,11 +75,67 @@ module Components
               div(class: 'overflow-hidden') do
                 table_attrs = component_attributes(additional_classes: table_classes)
                 table(**table_attrs) do
-                  yield if block_given?
+                  yield(self) if block_given?
                 end
               end
             end
           end
+        end
+      end
+
+      # Creates a table head section
+      def head(**attrs, &_block)
+        render TableHead.new(**attrs) do
+          yield(TableHeadInterface.new(self)) if block_given?
+        end
+      end
+
+      # Creates a table body section
+      def body(**attrs, &_block)
+        render TableBody.new(**attrs) do
+          yield(TableBodyInterface.new(self)) if block_given?
+        end
+      end
+
+      # Interface class for table head
+      class TableHeadInterface
+        def initialize(table)
+          @table = table
+        end
+
+        def row(**attrs, &_block)
+          @table.render TableRow.new(**attrs) do
+            yield(TableRowInterface.new(@table, :header)) if block_given?
+          end
+        end
+      end
+
+      # Interface class for table body
+      class TableBodyInterface
+        def initialize(table)
+          @table = table
+        end
+
+        def row(**attrs, &_block)
+          @table.render TableRow.new(**attrs) do
+            yield(TableRowInterface.new(@table, :body)) if block_given?
+          end
+        end
+      end
+
+      # Interface class for table row
+      class TableRowInterface
+        def initialize(table, context)
+          @table = table
+          @context = context
+        end
+
+        def header_cell(**attrs, &block)
+          @table.render TableHeaderCell.new(**attrs, &block)
+        end
+
+        def cell(**attrs, &block)
+          @table.render TableCell.new(**attrs, &block)
         end
       end
 

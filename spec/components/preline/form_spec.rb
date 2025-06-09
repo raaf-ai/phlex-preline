@@ -25,6 +25,49 @@ RSpec.describe Preline::Form, type: :component do
       expect(output).to have_executed_code_path('Renders form component')
       expect(output).to have_executed_code_path('Renders form with custom URL')
     end
+
+    it 'renders form and yields form builder' do
+      component = described_class.new(url: '/users')
+      form_builder = nil
+      output = render_phlex(component) do |form|
+        form_builder = form
+        'Form content'
+      end
+      
+      expect(output).to include('hs-form')
+      expect(output).to include('Form content')
+      expect(form_builder).not_to be_nil
+      expect(form_builder).to respond_to(:text_field)
+      expect(form_builder).to respond_to(:label)
+    end
+
+    it 'provides form builder methods' do
+      component = described_class.new(url: '/users')
+      output = component.call do |form|
+        # The form builder methods now render directly
+        form.whitespace
+        form.label(:email, 'Email')
+        form.whitespace
+        form.text_field(:email, class: 'form-control')
+      end
+      
+      expect(output).to include('<label')
+      expect(output).to include('for="email"')
+      expect(output).to include('Email')
+      expect(output).to include('<input')
+      expect(output).to include('type="text"')
+      expect(output).to include('name="email"')
+      expect(output).to include('form-control')
+    end
+
+    it 'supports form without yielding interface' do
+      component = described_class.new(url: '/users') do |form|
+        'Legacy form content'
+      end
+      output = render_phlex(component)
+      
+      expect(output).to include('Legacy form content')
+    end
     
     it 'renders form with model binding' do
       component = described_class.new(model: mock_model)

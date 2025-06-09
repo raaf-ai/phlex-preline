@@ -5,32 +5,36 @@ module Components
     # A Preline UI navbar component for site navigation.
     # Supports responsive behavior, dropdowns, branding, and fixed positioning.
     #
-    # @example Basic navbar with brand and items
+    # @example Basic navbar with yielding interface
+    #   render Components::Preline::Navbar.new(
+    #     brand: { text: "My App", href: "/" }
+    #   ) do |navbar|
+    #     navbar.nav_item(text: "Home", href: "/", active: true)
+    #     navbar.nav_item(text: "About", href: "/about")
+    #     navbar.nav_item(text: "Contact", href: "/contact")
+    #   end
+    #
+    # @example Navbar with dropdown using yielding interface
+    #   render Components::Preline::Navbar.new(
+    #     brand: { text: "App", logo: "/logo.png" },
+    #     variant: :dark,
+    #     fixed: :top
+    #   ) do |navbar|
+    #     navbar.nav_item(text: "Dashboard", href: "/dashboard", icon: "home")
+    #     navbar.dropdown(text: "Products") do |dropdown|
+    #       dropdown.item(text: "All Products", href: "/products")
+    #       dropdown.divider
+    #       dropdown.item(text: "Add New", href: "/products/new", icon: "plus")
+    #     end
+    #   end
+    #
+    # @example Navbar with items array
     #   render Components::Preline::Navbar.new(
     #     brand: { text: "My App", href: "/" },
     #     items: [
     #       { text: "Home", href: "/", active: true },
     #       { text: "About", href: "/about" },
     #       { text: "Contact", href: "/contact" }
-    #     ]
-    #   )
-    #
-    # @example Navbar with dropdown and icons
-    #   render Components::Preline::Navbar.new(
-    #     brand: { text: "App", logo: "/logo.png" },
-    #     variant: :dark,
-    #     fixed: :top,
-    #     items: [
-    #       { text: "Dashboard", href: "/dashboard", icon: "home" },
-    #       {
-    #         text: "Products",
-    #         dropdown: true,
-    #         dropdown_items: [
-    #           { text: "All Products", href: "/products" },
-    #           { divider: true },
-    #           { text: "Add New", href: "/products/new", icon: "plus" }
-    #         ]
-    #       }
     #     ]
     #   )
     class Navbar < ::Components::Preline::PrelineComponent
@@ -70,7 +74,7 @@ module Components
         @id = id || "navbar-#{SecureRandom.hex(4)}"
       end
 
-      def view_template(&block)
+      def view_template
         code_path('navbar:view_template:start')
         nav(
           class: build_navbar_classes,
@@ -82,7 +86,15 @@ module Components
               render_brand
             end
             render_toggler
-            render_collapse(&block)
+            render_collapse do
+              if block_given?
+                ul(class: "hs-navbar-nav #{@nav_class}".strip) do
+                  yield(self)
+                end
+              else
+                render_nav_items
+              end
+            end
           end
         end
       end
@@ -114,10 +126,27 @@ module Components
             render_dropdown_toggle(text, icon, badge)
             render_dropdown_menu(dropdown_items)
           elsif block_given?
-            yield
+            yield(self)
           else
             code_path('navbar:rendering_regular_item')
             render_nav_link(text, href, active, icon, badge, options)
+          end
+        end
+      end
+
+      # Create a dropdown menu within the navbar
+      #
+      # @param text [String] Dropdown toggle text
+      # @param icon [String, nil] FontAwesome icon name
+      # @param badge [String, Hash, nil] Badge content
+      # @yield Block that yields dropdown interface
+      def dropdown(text:, icon: nil, badge: nil, **options)
+        @dropdown_items = []
+        li(class: 'hs-nav-item hs-dropdown', **options) do
+          render_dropdown_toggle(text, icon, badge)
+          if block_given?
+            yield(NavbarDropdownInterface.new(self))
+            render_dropdown_menu(@dropdown_items)
           end
         end
       end
@@ -188,17 +217,12 @@ module Components
         end
       end
 
-      def render_collapse
+      def render_collapse(&block)
         div(
           id: @id,
-          class: 'hs-navbar-collapse'
-        ) do
-          if block_given?
-            yield
-          else
-            render_nav_items
-          end
-        end
+          class: 'hs-navbar-collapse',
+          &block
+        )
       end
 
       def render_nav_items
@@ -295,6 +319,34 @@ module Components
             end
           end
         end
+      end
+    end
+
+    # Interface class for navbar dropdown
+    class NavbarDropdownInterface
+      def initialize(navbar)
+        @navbar = navbar
+      end
+
+      # Add a dropdown item
+      def item(text:, href: nil, icon: nil, active: false, **options)
+        @navbar.instance_variable_get(:@dropdown_items) << {
+          text: text,
+          href: href,
+          icon: icon,
+          active: active,
+          **options
+        }
+      end
+
+      # Add a divider
+      def divider
+        @navbar.instance_variable_get(:@dropdown_items) << { divider: true }
+      end
+
+      # Add a header
+      def header(text:)
+        @navbar.instance_variable_get(:@dropdown_items) << { header: true, text: text }
       end
     end
   end

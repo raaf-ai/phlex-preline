@@ -281,4 +281,85 @@ RSpec.describe Preline::Table, type: :component do
       expect(output).to have_executed_code_path('Renders table cell component')
     end
   end
+
+  describe 'yielding interface pattern' do
+    it 'yields self when block is given' do
+      component = described_class.new
+      yielded_object = nil
+      
+      render_phlex(component) do |table|
+        yielded_object = table
+      end
+      
+      expect(yielded_object).to eq(component)
+    end
+
+    it 'renders table using yielding interface' do
+      component = described_class.new(striped: true)
+      output = render_phlex(component) do |table|
+        table.head do |head|
+          head.row do |row|
+            row.header_cell { 'Name' }
+            row.header_cell { 'Email' }
+          end
+        end
+        table.body do |body|
+          body.row do |row|
+            row.cell { 'John Doe' }
+            row.cell { 'john@example.com' }
+          end
+        end
+      end
+      
+      expect(output).to include('Name')
+      expect(output).to include('Email')
+      expect(output).to include('John Doe')
+      expect(output).to include('john@example.com')
+      expect(output).to include('hs-table-striped')
+      expect(output).to include('hs-table-head')
+      expect(output).to include('hs-table-body')
+    end
+
+    it 'supports mixed usage of yielding interface and direct components' do
+      component = described_class.new
+      output = render_phlex(component) do |table|
+        table.head do |head|
+          head.row do |row|
+            row.header_cell { 'Via Interface' }
+          end
+        end
+        table.render Preline::TableBody.new do |body|
+          body.render Preline::TableRow.new do |row|
+            row.render Preline::TableCell.new { 'Direct Component' }
+          end
+        end
+      end
+      
+      expect(output).to include('Via Interface')
+      expect(output).to include('Direct Component')
+    end
+
+    it 'passes attributes through yielding interface' do
+      component = described_class.new
+      output = render_phlex(component) do |table|
+        table.head(class: 'custom-head') do |head|
+          head.row(id: 'header-row') do |row|
+            row.header_cell(class: 'custom-header-cell') { 'Header' }
+          end
+        end
+        table.body(class: 'custom-body') do |body|
+          body.row(data: { id: '123' }) do |row|
+            row.cell(class: 'custom-cell') { 'Cell' }
+          end
+        end
+      end
+      
+      expect(output).to include('custom-head')
+      expect(output).to include('header-row')
+      expect(output).to include('custom-header-cell')
+      expect(output).to include('custom-body')
+      expect(output).to include('data-id="123"')
+      expect(output).to include('custom-cell')
+    end
+  end
 end

@@ -5,7 +5,20 @@ module Components
     # A Preline UI card component for organizing content in a container with optional header and footer.
     # Supports title, subtitle, description, and customizable header/footer actions.
     #
-    # @example Basic card with content
+    # @example Basic card with yielding interface
+    #   render Components::Preline::Card.new do |card|
+    #     card.header do
+    #       h3 { "Card Title" }
+    #     end
+    #     card.body do
+    #       p { "Card content goes here" }
+    #     end
+    #     card.footer do
+    #       button { "Save" }
+    #     end
+    #   end
+    #
+    # @example Card with direct content
     #   render Components::Preline::Card.new(title: "Card Title") do
     #     p { "Card content goes here" }
     #   end
@@ -77,9 +90,59 @@ module Components
         card_attrs = component_attributes(additional_classes: build_classes)
 
         div(**card_attrs) do
-          render_header if has_header?
-          render_body(&block)
-          render_footer if has_footer?
+          if block_given?
+            # Check if the block expects an argument (yielding interface)
+            # Look for blocks that have explicit parameters (not just rest args)
+            if block.parameters.any? { |type, _| %i[opt req].include?(type) }
+              yield(self)
+            else
+              # Legacy pattern - render structure with content in body
+              render_header if has_header?
+              render_body(&block)
+              render_footer if has_footer?
+            end
+          else
+            render_header if has_header?
+            render_body
+            render_footer if has_footer?
+          end
+        end
+      end
+
+      # Creates a card header section
+      def header(**attrs, &_block)
+        classes = ['hs-card-header theme-card-header', @header_class, attrs[:class]]
+                  .compact
+                  .join(' ')
+                  .strip
+        div(class: classes) do
+          yield if block_given?
+        end
+      end
+
+      # Creates a card body section
+      def body(**attrs, &_block)
+        classes = ['hs-card-body theme-card-body', @body_class, attrs[:class]]
+                  .compact
+                  .join(' ')
+                  .strip
+        div(class: classes) do
+          if @description && !block_given?
+            code_path 'Renders card description'
+            p(class: 'hs-card-description') { plain @description }
+          end
+          yield if block_given?
+        end
+      end
+
+      # Creates a card footer section
+      def footer(**attrs, &_block)
+        classes = ['hs-card-footer', @footer_class, attrs[:class]]
+                  .compact
+                  .join(' ')
+                  .strip
+        div(class: classes) do
+          yield if block_given?
         end
       end
 
@@ -113,7 +176,7 @@ module Components
         end
       end
 
-      def render_body
+      def render_body(&_block)
         div(class: "hs-card-body theme-card-body #{@body_class}".strip) do
           if @description
             code_path 'Renders card description'

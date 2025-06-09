@@ -290,4 +290,151 @@ RSpec.describe Preline::Tabs, type: :component do
       expect(output).to include('hs-tabs-nav')
     end
   end
+  
+  describe 'yielding interface pattern' do
+    it 'yields self when block is given' do
+      component = described_class.new
+      yielded_object = nil
+      
+      render_phlex(component) do |tabs|
+        yielded_object = tabs
+      end
+      
+      expect(yielded_object).to eq(component)
+    end
+
+    it 'renders tabs using yielding interface' do
+      component = described_class.new
+      output = render_phlex(component) do |tabs|
+        tabs.nav do |nav|
+          nav.tab(active: true) { tabs.plain 'First Tab' }
+          nav.tab { tabs.plain 'Second Tab' }
+          nav.tab(icon: 'star', badge: '3') { tabs.plain 'Third Tab' }
+        end
+        tabs.content do |content|
+          content.pane(active: true) do
+            tabs.p { 'Content for first tab' }
+          end
+          content.pane do
+            tabs.p { 'Content for second tab' }
+          end
+          content.pane do
+            tabs.p { 'Content for third tab' }
+          end
+        end
+      end
+      
+      expect(output).to include('First Tab')
+      expect(output).to include('Second Tab')
+      expect(output).to include('Third Tab')
+      expect(output).to include('Content for first tab')
+      expect(output).to include('Content for second tab')
+      expect(output).to include('Content for third tab')
+      expect(output).to include('hs-tabs-nav')
+      expect(output).to include('hs-tab-content')
+      expect(output).to include('fa-star')
+      expect(output).to include('hs-tab-badge')
+      expect(output).to include('3')
+    end
+
+    it 'supports legacy pattern with constructor tabs' do
+      component = described_class.new(
+        tabs: [
+          { title: 'Legacy Tab 1', pane_id: 'legacy1', active: true },
+          { title: 'Legacy Tab 2', pane_id: 'legacy2' }
+        ]
+      )
+      
+      output = render_phlex(component) do
+        component.tab_pane(id: 'legacy1', active: true) { 'Legacy content 1' }
+        component.tab_pane(id: 'legacy2') { 'Legacy content 2' }
+      end
+      
+      expect(output).to include('Legacy Tab 1')
+      expect(output).to include('Legacy Tab 2')
+      expect(output).to include('Legacy content 1')
+      expect(output).to include('Legacy content 2')
+    end
+
+    it 'passes attributes through yielding interface' do
+      component = described_class.new
+      output = render_phlex(component) do |tabs|
+        tabs.nav(class: 'custom-nav') do |nav|
+          nav.tab(class: 'custom-tab', data: { test: 'value' }) { tabs.plain 'Tab with attrs' }
+        end
+        tabs.content(class: 'custom-content') do |content|
+          content.pane(class: 'custom-pane', id: 'special-pane') do
+            'Pane with attrs'
+          end
+        end
+      end
+      
+      expect(output).to include('custom-nav')
+      expect(output).to include('custom-tab')
+      expect(output).to include('data-test="value"')
+      expect(output).to include('custom-content')
+      expect(output).to include('custom-pane')
+      expect(output).to include('id="special-pane"')
+    end
+
+    it 'maintains tab/pane correspondence' do
+      component = described_class.new(id: 'test-tabs')
+      output = render_phlex(component) do |tabs|
+        tabs.nav do |nav|
+          nav.tab { tabs.plain 'Tab A' }
+          nav.tab { tabs.plain 'Tab B' }
+        end
+        tabs.content do |content|
+          content.pane { 'Pane A' }
+          content.pane { 'Pane B' }
+        end
+      end
+      
+      # Check that tabs reference correct panes
+      expect(output).to include('data-hs-tab="#test-tabs-pane-0"')
+      expect(output).to include('data-hs-tab="#test-tabs-pane-1"')
+      expect(output).to include('aria-controls="test-tabs-pane-0"')
+      expect(output).to include('aria-controls="test-tabs-pane-1"')
+    end
+
+    it 'handles active state correctly in yielding interface' do
+      component = described_class.new
+      output = render_phlex(component) do |tabs|
+        tabs.nav do |nav|
+          nav.tab { tabs.plain 'Tab 1' }
+          nav.tab(active: true) { tabs.plain 'Tab 2 (Active)' }
+          nav.tab { tabs.plain 'Tab 3' }
+        end
+        tabs.content do |content|
+          content.pane { 'Pane 1' }
+          content.pane(active: true) { 'Pane 2 (Active)' }
+          content.pane { 'Pane 3' }
+        end
+      end
+      
+      # Check that the second tab/pane is active
+      doc = Nokogiri::HTML.fragment(output)
+      active_tab = doc.css('.hs-tab-active').first
+      active_pane = doc.css('.hs-tab-pane-active').first
+      
+      expect(active_tab.text).to include('Tab 2 (Active)')
+      expect(active_pane.text).to include('Pane 2 (Active)')
+    end
+
+    it 'applies tab styles with yielding interface' do
+      component = described_class.new(type: :pills, alignment: :center, fill: true)
+      output = render_phlex(component) do |tabs|
+        tabs.nav do |nav|
+          nav.tab { tabs.plain 'Styled Tab' }
+        end
+        tabs.content do |content|
+          content.pane { 'Content' }
+        end
+      end
+      
+      expect(output).to include('hs-tabs-pills')
+      expect(output).to include('hs-tabs-center')
+      expect(output).to include('hs-tabs-fill')
+    end
+  end
 end

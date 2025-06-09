@@ -102,14 +102,22 @@ module Components
 
       # Form builder methods for compatibility
       def text_field(field, options = {})
-        # Mock implementation for testing
-        %(<input type="text" name="#{field}" id="#{field}" class="#{options[:class]}">)
+        # Render the input directly instead of returning a string
+        input(
+          type: 'text',
+          name: field.to_s,
+          id: field.to_s,
+          class: options[:class]
+        )
       end
 
       def label(field, text = nil, options = {})
-        # Mock implementation for testing
+        # Render the label directly instead of returning a string
         text ||= field.to_s.humanize
-        %(<label for="#{field}" class="#{options[:class]}">#{text}</label>)
+        super(
+          for: field.to_s,
+          class: options[:class]
+        ) { text }
       end
 
       private

@@ -308,4 +308,195 @@ RSpec.describe Preline::Dropdown, type: :component do
       expect(output).to include('hs-dropdown-divider')
     end
   end
+
+  describe 'yielding interface' do
+    it 'renders dropdown with yielded items' do
+      output = described_class.new(trigger_text: 'Options').call do |dropdown|
+        dropdown.item(text: 'Edit', href: '/edit')
+        dropdown.item(text: 'Delete', href: '/delete')
+      end
+
+      expect(output).to include('hs-dropdown')
+      expect(output).to include('Options')
+      expect(output).to include('hs-dropdown-toggle')
+      expect(output).to include('hs-dropdown-menu')
+      expect(output).to include('Edit')
+      expect(output).to include('href="/edit"')
+      expect(output).to include('Delete')
+      expect(output).to include('href="/delete"')
+    end
+
+    it 'renders dropdown with icons and dividers' do
+      output = described_class.new(
+        trigger_text: 'Actions',
+        trigger_icon: 'cog',
+        trigger_variant: :primary,
+        placement: :'bottom-end'
+      ).call do |dropdown|
+        dropdown.item(text: 'View', icon: 'eye', href: '/view')
+        dropdown.item(text: 'Edit', icon: 'edit', href: '/edit')
+        dropdown.divider
+        dropdown.item(text: 'Delete', icon: 'trash', variant: :danger)
+      end
+
+      expect(output).to include('Actions')
+      expect(output).to include('fa-cog')
+      expect(output).to include('data-hs-dropdown-placement="bottom-end"')
+      expect(output).to include('View')
+      expect(output).to include('fa-eye')
+      expect(output).to include('href="/view"')
+      expect(output).to include('Edit')
+      expect(output).to include('fa-edit')
+      expect(output).to include('hs-dropdown-divider')
+      expect(output).to include('Delete')
+      expect(output).to include('fa-trash')
+      expect(output).to include('hs-dropdown-item-danger')
+    end
+
+    it 'renders dropdown with headers' do
+      output = described_class.new(trigger_text: 'Menu').call do |dropdown|
+        dropdown.header(text: 'Section 1')
+        dropdown.item(text: 'Item 1', href: '/1')
+        dropdown.item(text: 'Item 2', href: '/2')
+        dropdown.divider
+        dropdown.header(text: 'Section 2')
+        dropdown.item(text: 'Item 3', href: '/3')
+      end
+
+      expect(output).to include('Menu')
+      expect(output).to include('hs-dropdown-header')
+      expect(output).to include('Section 1')
+      expect(output).to include('Section 2')
+      expect(output).to include('Item 1')
+      expect(output).to include('Item 2')
+      expect(output).to include('Item 3')
+      expect(output).to include('hs-dropdown-divider')
+    end
+
+    it 'handles disabled and active items' do
+      output = described_class.new(trigger_text: 'Status').call do |dropdown|
+        dropdown.item(text: 'Active Item', active: true)
+        dropdown.item(text: 'Disabled Item', disabled: true)
+        dropdown.item(text: 'Normal Item')
+      end
+
+      expect(output).to include('Status')
+      expect(output).to include('Active Item')
+      expect(output).to include('hs-dropdown-item-active')
+      expect(output).to include('Disabled Item')
+      expect(output).to include('hs-dropdown-item-disabled')
+      expect(output).to include('Normal Item')
+    end
+
+    it 'supports custom content by calling dropdown_item directly' do
+      dropdown = described_class.new(trigger_text: 'Custom')
+      output = dropdown.call do
+        dropdown.dropdown_item(text: 'First', href: '/first')
+        dropdown.dropdown_item(divider: true)
+        dropdown.dropdown_item(header: true, text: 'Header')
+        dropdown.dropdown_item(text: 'Second', href: '/second')
+      end
+
+      expect(output).to include('Custom')
+      expect(output).to include('First')
+      expect(output).to include('href="/first"')
+      expect(output).to include('hs-dropdown-divider')
+      expect(output).to include('hs-dropdown-header')
+      expect(output).to include('Header')
+      expect(output).to include('Second')
+    end
+
+    it 'handles trigger without text but with icon' do
+      output = described_class.new(
+        trigger_text: nil,
+        trigger_icon: 'ellipsis-v'
+      ).call do |dropdown|
+        dropdown.item(text: 'Option 1')
+        dropdown.item(text: 'Option 2')
+      end
+
+      expect(output).to include('fa-ellipsis-v')
+      expect(output).not_to include('hs-dropdown-toggle-icon') # No dropdown arrow for ellipsis
+      expect(output).to include('Option 1')
+      expect(output).to include('Option 2')
+    end
+
+    it 'falls back to legacy items array when no yield' do
+      output = described_class.new(
+        trigger_text: 'Legacy',
+        items: [
+          { text: 'Item 1', href: '/1' },
+          { divider: true },
+          { text: 'Item 2', href: '/2' }
+        ]
+      ).call
+
+      expect(output).to include('Legacy')
+      expect(output).to include('Item 1')
+      expect(output).to include('href="/1"')
+      expect(output).to include('hs-dropdown-divider')
+      expect(output).to include('Item 2')
+      expect(output).to include('href="/2"')
+    end
+
+    it 'prioritizes yielded items over items array' do
+      output = described_class.new(
+        trigger_text: 'Test',
+        items: [{ text: 'Old Item' }]
+      ).call do |dropdown|
+        dropdown.item(text: 'New Item')
+      end
+
+      expect(output).to include('New Item')
+      expect(output).not_to include('Old Item')
+    end
+
+    it 'handles dropdown settings' do
+      output = described_class.new(
+        trigger_text: 'Settings',
+        trigger_size: :sm,
+        trigger_class: 'custom-trigger',
+        menu_class: 'custom-menu',
+        offset: 20
+      ).call do |dropdown|
+        dropdown.item(text: 'Option')
+      end
+
+      expect(output).to include('Settings')
+      expect(output).to include('custom-trigger')
+      expect(output).to include('custom-menu')
+      expect(output).to include('data-hs-dropdown-offset="20"')
+      expect(output).to include('Option')
+    end
+
+    it 'renders complex dropdown with mixed items' do
+      output = described_class.new(
+        trigger_text: 'Account',
+        trigger_icon: 'user',
+        trigger_variant: :secondary
+      ).call do |dropdown|
+        dropdown.header(text: 'Signed in as')
+        dropdown.item(text: 'john@example.com', disabled: true)
+        dropdown.divider
+        dropdown.item(text: 'Profile', icon: 'user-circle', href: '/profile')
+        dropdown.item(text: 'Settings', icon: 'cog', href: '/settings')
+        dropdown.divider
+        dropdown.item(text: 'Sign out', icon: 'sign-out-alt', href: '/logout', variant: :danger)
+      end
+
+      expect(output).to include('Account')
+      expect(output).to include('fa-user')
+      expect(output).to include('Signed in as')
+      expect(output).to include('john@example.com')
+      expect(output).to include('hs-dropdown-item-disabled')
+      expect(output).to include('Profile')
+      expect(output).to include('fa-user-circle')
+      expect(output).to include('Settings')
+      expect(output).to include('fa-cog')
+      expect(output).to include('Sign out')
+      expect(output).to include('fa-sign-out-alt')
+      expect(output).to include('hs-dropdown-item-danger')
+      expect(output.scan('hs-dropdown-divider').length).to eq(2)
+    end
+  end
 end

@@ -5,7 +5,21 @@ module Components
     # A Preline UI modal component for displaying overlay dialogs.
     # Supports various sizes, positioning options, scrollable content, and customizable actions.
     #
-    # @example Basic modal
+    # @example Basic modal with yielding interface
+    #   render Components::Preline::Modal.new(id: "my-modal") do |modal|
+    #     modal.header do
+    #       modal.h3 { "Confirm Action" }
+    #     end
+    #     modal.body do
+    #       modal.p { "Are you sure you want to proceed?" }
+    #     end
+    #     modal.footer do
+    #       modal.button(variant: :secondary) { "Cancel" }
+    #       modal.button(variant: :primary) { "Confirm" }
+    #     end
+    #   end
+    #
+    # @example Modal with nested components
     #   render Components::Preline::Modal.new(
     #     id: "my-modal",
     #     title: "Confirm Action"
@@ -124,7 +138,44 @@ module Components
           },
           data: build_data_attributes
         ) do
-          render_dialog(&block)
+          if block_given? && block.parameters.any? { |type, _| %i[opt req].include?(type) }
+            render_dialog_with_yield(&block)
+          else
+            render_dialog(&block)
+          end
+        end
+      end
+
+      # Creates a modal header section
+      def header(**attrs, &_block)
+        classes = ['hs-modal-header', @header_class, attrs[:class]]
+                  .compact
+                  .join(' ')
+                  .strip
+        div(class: classes) do
+          yield if block_given?
+        end
+      end
+
+      # Creates a modal body section
+      def body(**attrs, &_block)
+        classes = ['hs-modal-body', @body_class, attrs.delete(:class)]
+                  .compact
+                  .join(' ')
+                  .strip
+        div(id: "#{@id}-body", class: classes, **attrs) do
+          yield if block_given?
+        end
+      end
+
+      # Creates a modal footer section
+      def footer(**attrs, &_block)
+        classes = ['hs-modal-footer', @footer_class, attrs[:class]]
+                  .compact
+                  .join(' ')
+                  .strip
+        div(class: classes) do
+          yield if block_given?
         end
       end
 
@@ -156,6 +207,17 @@ module Components
               code_path 'Renders modal with footer actions'
               render_footer
             end
+          end
+        end
+      end
+
+      def render_dialog_with_yield
+        div(
+          class: build_dialog_classes,
+          role: 'document'
+        ) do
+          div(class: 'hs-modal-content') do
+            yield(self) if block_given?
           end
         end
       end
@@ -206,7 +268,7 @@ module Components
         end
       end
 
-      def render_body
+      def render_body(&_block)
         div(id: "#{@id}-body", class: "hs-modal-body #{@body_class}".strip) do
           yield if block_given?
         end

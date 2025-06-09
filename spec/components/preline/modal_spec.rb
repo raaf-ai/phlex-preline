@@ -233,4 +233,140 @@ RSpec.describe Preline::Modal, type: :component do
       expect(output).to have_executed_code_path('Renders scrollable modal')
     end
   end
+  
+  describe 'yielding interface pattern' do
+    it 'yields self when block is given' do
+      component = described_class.new(id: 'yield-modal')
+      yielded_object = nil
+      
+      render_phlex(component) do |modal|
+        yielded_object = modal
+      end
+      
+      expect(yielded_object).to eq(component)
+    end
+
+    it 'renders modal using yielding interface' do
+      component = described_class.new(id: 'interface-modal')
+      output = render_phlex(component) do |modal|
+        modal.header do
+          modal.h3(class: 'text-lg font-bold') { 'Custom Modal Header' }
+          modal.button(class: 'close-btn') { '×' }
+        end
+        modal.body do
+          modal.p { 'This is the modal body content' }
+          modal.p { 'With multiple paragraphs' }
+        end
+        modal.footer do
+          modal.button(class: 'btn-secondary') { 'Cancel' }
+          modal.button(class: 'btn-primary') { 'Save Changes' }
+        end
+      end
+      
+      expect(output).to include('Custom Modal Header')
+      expect(output).to include('This is the modal body content')
+      expect(output).to include('With multiple paragraphs')
+      expect(output).to include('Cancel')
+      expect(output).to include('Save Changes')
+      expect(output).to include('hs-modal-header')
+      expect(output).to include('hs-modal-body')
+      expect(output).to include('hs-modal-footer')
+    end
+
+    it 'supports legacy pattern with constructor params' do
+      component = described_class.new(
+        id: 'legacy-modal',
+        title: 'Legacy Title',
+        footer_actions: [
+          { text: 'Close', variant: :secondary, dismiss: true },
+          { text: 'Submit', variant: :primary }
+        ]
+      )
+      
+      output = render_phlex(component) do
+        'Legacy body content'
+      end
+      
+      expect(output).to include('Legacy Title')
+      expect(output).to include('Legacy body content')
+      expect(output).to include('Close')
+      expect(output).to include('Submit')
+    end
+
+    it 'passes attributes through yielding interface' do
+      component = described_class.new(id: 'attr-interface-modal')
+      output = render_phlex(component) do |modal|
+        modal.header(class: 'bg-primary-100') do
+          'Header with custom class'
+        end
+        modal.body(class: 'p-8', data: { testid: 'modal-body' }) do
+          'Body with custom padding'
+        end
+        modal.footer(class: 'border-t-2') do
+          'Footer with custom border'
+        end
+      end
+      
+      expect(output).to include('bg-primary-100')
+      expect(output).to include('p-8')
+      expect(output).to include('data-testid="modal-body"')
+      expect(output).to include('border-t-2')
+      expect(output).to include('Header with custom class')
+      expect(output).to include('Body with custom padding')
+      expect(output).to include('Footer with custom border')
+    end
+
+    it 'merges custom classes with default classes' do
+      component = described_class.new(
+        id: 'merge-modal',
+        header_class: 'default-header',
+        body_class: 'default-body',
+        footer_class: 'default-footer'
+      )
+      
+      output = render_phlex(component) do |modal|
+        modal.header(class: 'custom-header') { 'Header' }
+        modal.body(class: 'custom-body') { 'Body' }
+        modal.footer(class: 'custom-footer') { 'Footer' }
+      end
+      
+      expect(output).to include('default-header')
+      expect(output).to include('custom-header')
+      expect(output).to include('default-body')
+      expect(output).to include('custom-body')
+      expect(output).to include('default-footer')
+      expect(output).to include('custom-footer')
+    end
+
+    it 'allows partial use of yielding interface' do
+      component = described_class.new(id: 'partial-modal', close_button: false)
+      output = render_phlex(component) do |modal|
+        modal.body { 'Only body content' }
+      end
+      
+      expect(output).to include('Only body content')
+      expect(output).to include('hs-modal-body')
+      expect(output).not_to include('hs-modal-header')
+      expect(output).not_to include('hs-modal-footer')
+    end
+
+    it 'handles close button in yielding interface' do
+      component = described_class.new(id: 'close-interface-modal')
+      output = render_phlex(component) do |modal|
+        modal.header do
+          modal.h3 { 'Modal Title' }
+          modal.button(
+            type: 'button',
+            class: 'hs-modal-close',
+            data: { 'hs-overlay': '#close-interface-modal' }
+          ) { '×' }
+        end
+        modal.body { 'Content' }
+      end
+      
+      expect(output).to include('Modal Title')
+      expect(output).to include('data-hs-overlay="#close-interface-modal"')
+      expect(output).to include('hs-modal-close')
+    end
+  end
 end

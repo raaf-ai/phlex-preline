@@ -4,7 +4,37 @@ module Components
   module Preline
     # TreeView component for hierarchical data display
     #
-    # @example Basic tree view
+    # @example Basic tree view with yielding interface
+    #   TreeView.new do |tree|
+    #     tree.node(label: "Documents") do |node|
+    #       node.item(label: "Resume.pdf")
+    #       node.item(label: "Cover Letter.docx")
+    #     end
+    #     tree.node(label: "Images") do |node|
+    #       node.item(label: "Profile.jpg")
+    #       node.item(label: "Banner.png")
+    #     end
+    #   end
+    #
+    # @example Tree with icons and badges
+    #   TreeView.new do |tree|
+    #     tree.node(label: "Inbox", icon: "inbox", badge: "3") do |node|
+    #       node.item(label: "Unread", icon: "envelope", badge: "2")
+    #       node.item(label: "Starred", icon: "star")
+    #     end
+    #     tree.item(label: "Sent", icon: "paper-plane")
+    #   end
+    #
+    # @example Selectable tree with checkboxes
+    #   TreeView.new(selectable: true) do |tree|
+    #     tree.node(label: "Select All") do |node|
+    #       node.item(label: "Option 1", selected: true)
+    #       node.item(label: "Option 2")
+    #       node.item(label: "Option 3")
+    #     end
+    #   end
+    #
+    # @example Tree view with items array
     #   TreeView(items: [
     #     { label: "Documents", children: [
     #       { label: "Resume.pdf" },
@@ -16,35 +46,14 @@ module Components
     #     ]}
     #   ])
     #
-    # @example Tree with icons and badges
-    #   TreeView(items: [
-    #     { label: "Inbox", icon: "inbox", badge: "3", children: [
-    #       { label: "Unread", icon: "envelope", badge: "2" },
-    #       { label: "Starred", icon: "star" }
-    #     ]},
-    #     { label: "Sent", icon: "paper-plane" }
-    #   ])
-    #
-    # @example Selectable tree with checkboxes
-    #   TreeView(selectable: true, items: [
-    #     { label: "Select All", children: [
-    #       { label: "Option 1", selected: true },
-    #       { label: "Option 2" },
-    #       { label: "Option 3" }
-    #     ]}
-    #   ])
-    #
     # @example Tree with links
-    #   TreeView(items: [
-    #     { label: "Home", href: "/", icon: "home" },
-    #     { label: "Products", href: "/products", children: [
-    #       { label: "Category A", href: "/products/a" },
-    #       { label: "Category B", href: "/products/b" }
-    #     ]}
-    #   ])
-    #
-    # @example Expanded tree
-    #   TreeView(expanded: true, items: file_structure)
+    #   TreeView.new do |tree|
+    #     tree.item(label: "Home", href: "/", icon: "home")
+    #     tree.node(label: "Products", href: "/products") do |node|
+    #       node.item(label: "Category A", href: "/products/a")
+    #       node.item(label: "Category B", href: "/products/b")
+    #     end
+    #   end
     class TreeView < ::Components::Preline::PrelineComponent
       # @param items [Array<Hash>] Tree items with :label, :children, :icon, :badge, :href, :selected, :value
       # @param expanded [Boolean] Whether tree nodes are expanded by default
@@ -60,6 +69,7 @@ module Components
         @custom_class = attrs.delete(:class)
         @data_attrs = attrs.delete(:data) || {}
         @html_attrs = attrs
+        @yielded_items = []
       end
 
       def view_template
@@ -69,12 +79,58 @@ module Components
           data: @data_attrs.merge({ 'hs-tree-view': '' })
         ) do
           ul(class: 'hs-tree-view-root') do
-            @items.each do |item|
-              render_tree_item(item)
+            if @items.any?
+              @items.each do |item|
+                render_tree_item(item)
+              end
+            elsif block_given?
+              # Try to determine if this is a yielding interface by calling with self
+              # If the block accepts the parameter, items will be added to @yielded_items
+              initial_items = @yielded_items.length
+              yield(self)
+
+              # If items were added, we're using the yielding interface
+              if @yielded_items.length > initial_items
+                @yielded_items.each do |item|
+                  render_tree_item(item)
+                end
+              end
+              # If no items were added, the content was already rendered by yield
             end
           end
-          yield if block_given?
         end
+      end
+
+      # Creates a tree node (parent item with children)
+      def node(label:, icon: nil, badge: nil, href: nil, selected: false, value: nil, **attrs, &_block)
+        node_attrs = {
+          label: label,
+          icon: icon,
+          badge: badge,
+          href: href,
+          selected: selected,
+          value: value,
+          children: []
+        }.merge(attrs)
+
+        if block_given?
+          interface = TreeNodeInterface.new(node_attrs[:children])
+          yield(interface)
+        end
+
+        @yielded_items << node_attrs
+      end
+
+      # Creates a tree item (leaf node)
+      def item(label:, icon: nil, badge: nil, href: nil, selected: false, value: nil, **attrs)
+        @yielded_items << {
+          label: label,
+          icon: icon,
+          badge: badge,
+          href: href,
+          selected: selected,
+          value: value
+        }.merge(attrs)
       end
 
       private
@@ -105,7 +161,7 @@ module Components
               'hs-tree-view-toggle': '',
               'hs-tree-view-open': @expanded ? 'true' : nil
             }.compact,
-            aria: { expanded: @expanded }
+            aria: { expanded: @expanded ? 'true' : 'false' }
           ) do
             render_toggle_icon
           end
@@ -183,6 +239,45 @@ module Components
             d: 'M9 5l7 7-7 7'
           )
         end
+      end
+    end
+
+    # Interface class for tree nodes
+    class TreeNodeInterface
+      def initialize(children_array)
+        @children = children_array
+      end
+
+      # Creates a child tree node
+      def node(label:, icon: nil, badge: nil, href: nil, selected: false, value: nil, **attrs, &_block)
+        node_attrs = {
+          label: label,
+          icon: icon,
+          badge: badge,
+          href: href,
+          selected: selected,
+          value: value,
+          children: []
+        }.merge(attrs)
+
+        if block_given?
+          interface = TreeNodeInterface.new(node_attrs[:children])
+          yield(interface)
+        end
+
+        @children << node_attrs
+      end
+
+      # Creates a child tree item
+      def item(label:, icon: nil, badge: nil, href: nil, selected: false, value: nil, **attrs)
+        @children << {
+          label: label,
+          icon: icon,
+          badge: badge,
+          href: href,
+          selected: selected,
+          value: value
+        }.merge(attrs)
       end
     end
   end

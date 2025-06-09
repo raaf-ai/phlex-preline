@@ -5,7 +5,26 @@ module Components
     # A Preline UI dropdown component for creating contextual overlay menus.
     # Supports flexible positioning, custom triggers, and various item types.
     #
-    # @example Basic dropdown
+    # @example Basic dropdown with yielding interface
+    #   render Components::Preline::Dropdown.new(trigger_text: "Options") do |dropdown|
+    #     dropdown.item(text: "Edit", href: "/edit")
+    #     dropdown.item(text: "Delete", href: "/delete")
+    #   end
+    #
+    # @example Dropdown with icons and dividers
+    #   render Components::Preline::Dropdown.new(
+    #     trigger_text: "Actions",
+    #     trigger_icon: "cog",
+    #     trigger_variant: :primary,
+    #     placement: :"bottom-end"
+    #   ) do |dropdown|
+    #     dropdown.item(text: "View", icon: "eye", href: "/view")
+    #     dropdown.item(text: "Edit", icon: "edit", href: "/edit")
+    #     dropdown.divider
+    #     dropdown.item(text: "Delete", icon: "trash", variant: :danger)
+    #   end
+    #
+    # @example Dropdown with items array
     #   render Components::Preline::Dropdown.new(
     #     trigger_text: "Options",
     #     items: [
@@ -14,19 +33,95 @@ module Components
     #     ]
     #   )
     #
-    # @example Dropdown with icons and dividers
+    # @example User account dropdown
+    #   render Components::Preline::Dropdown.new(
+    #     trigger_text: current_user.name,
+    #     trigger_icon: "user-circle",
+    #     placement: :"bottom-end"
+    #   ) do |dropdown|
+    #     dropdown.header(text: current_user.email)
+    #     dropdown.divider
+    #     dropdown.item(text: "Profile", href: "/profile", icon: "user")
+    #     dropdown.item(text: "Settings", href: "/settings", icon: "cog")
+    #     dropdown.item(text: "Billing", href: "/billing", icon: "credit-card")
+    #     dropdown.divider
+    #     dropdown.item(text: "Sign out", href: "/logout", icon: "sign-out-alt", variant: :danger)
+    #   end
+    #
+    # @example Dropdown with custom content
+    #   render Components::Preline::Dropdown.new(trigger_text: "Notifications", trigger_icon: "bell") do
+    #     div(class: "p-4 max-w-sm") do
+    #       h3(class: "font-semibold mb-2") { "Recent Notifications" }
+    #       ul(class: "space-y-2") do
+    #         notifications.each do |notification|
+    #           li(class: "p-2 hover:bg-gray-100 rounded") do
+    #             p(class: "text-sm") { notification.message }
+    #             time(class: "text-xs text-gray-500") { notification.created_at }
+    #           end
+    #         end
+    #       end
+    #     end
+    #   end
+    #
+    # @example Action dropdown with confirmation
     #   render Components::Preline::Dropdown.new(
     #     trigger_text: "Actions",
-    #     trigger_icon: "cog",
-    #     trigger_variant: :primary,
-    #     placement: :"bottom-end",
-    #     items: [
-    #       { text: "View", icon: "eye", href: "/view" },
-    #       { text: "Edit", icon: "edit", href: "/edit" },
-    #       { divider: true },
-    #       { text: "Delete", icon: "trash", variant: :danger }
-    #     ]
-    #   )
+    #     trigger_variant: :secondary,
+    #     trigger_size: :sm
+    #   ) do |dropdown|
+    #     dropdown.item(text: "Edit", href: edit_path, icon: "edit")
+    #     dropdown.item(text: "Duplicate", icon: "copy", data: { action: "duplicate" })
+    #     dropdown.item(text: "Archive", icon: "archive", disabled: !can_archive?)
+    #     dropdown.divider
+    #     dropdown.item(
+    #       text: "Delete",
+    #       icon: "trash",
+    #       variant: :danger,
+    #       data: {
+    #         turbo_method: :delete,
+    #         turbo_confirm: "Are you sure?"
+    #       }
+    #     )
+    #   end
+    #
+    # @example Language selector dropdown
+    #   render Components::Preline::Dropdown.new(
+    #     trigger_text: I18n.locale.to_s.upcase,
+    #     trigger_icon: "globe",
+    #     placement: :"bottom-start"
+    #   ) do |dropdown|
+    #     I18n.available_locales.each do |locale|
+    #       dropdown.item(
+    #         text: t("languages.#{locale}"),
+    #         href: url_for(locale: locale),
+    #         active: locale == I18n.locale
+    #       )
+    #     end
+    #   end
+    #
+    # @example Ellipsis menu (icon-only trigger)
+    #   render Components::Preline::Dropdown.new(
+    #     trigger_icon: "ellipsis-v",
+    #     trigger_variant: :ghost,
+    #     placement: :"bottom-end"
+    #   ) do |dropdown|
+    #     dropdown.item(text: "View details", icon: "info-circle")
+    #     dropdown.item(text: "Download", icon: "download")
+    #     dropdown.item(text: "Share", icon: "share")
+    #   end
+    #
+    # @example Sort options dropdown
+    #   render Components::Preline::Dropdown.new(
+    #     trigger_text: "Sort by: #{current_sort}",
+    #     trigger_icon: "sort"
+    #   ) do |dropdown|
+    #     dropdown.item(text: "Newest first", href: "?sort=newest", active: params[:sort] == "newest")
+    #     dropdown.item(text: "Oldest first", href: "?sort=oldest", active: params[:sort] == "oldest")
+    #     dropdown.item(text: "A-Z", href: "?sort=name_asc", active: params[:sort] == "name_asc")
+    #     dropdown.item(text: "Z-A", href: "?sort=name_desc", active: params[:sort] == "name_desc")
+    #     dropdown.item(text: "Price: Low to High", href: "?sort=price_asc", active: params[:sort] == "price_asc")
+    #     dropdown.item(text: "Price: High to Low", href: "?sort=price_desc", active: params[:sort] == "price_desc")
+    #   end
     class Dropdown < ::Components::Preline::PrelineComponent
       PLACEMENTS = {
         'bottom-start': 'bottom-start',
@@ -81,16 +176,59 @@ module Components
 
         # Use secure attribute extraction
         initialize_component(attrs)
+        @yielded_items = []
       end
 
-      def view_template(&block)
+      def view_template
         code_path 'Renders dropdown component'
         wrapper_attrs = component_attributes(additional_classes: build_wrapper_classes)
 
         div(**wrapper_attrs) do
           render_trigger
-          render_menu(&block)
+          render_menu do
+            if block_given?
+              # Try yielding interface first
+              initial_items = @yielded_items.length
+              content = yield(self)
+
+              # If items were added, we're using yielding interface
+              if @yielded_items.length > initial_items
+                render_yielded_items
+              else
+                # No items added, treat as custom content
+                code_path 'Renders dropdown with custom content'
+                plain content if content
+              end
+            elsif @items.any?
+              render_items
+            end
+          end
         end
+      end
+
+      # Add a dropdown item
+      def item(text: nil, href: nil, icon: nil, divider: false, header: false, disabled: false, active: false, variant: nil, **options)
+        @yielded_items << {
+          text: text,
+          href: href,
+          icon: icon,
+          divider: divider,
+          header: header,
+          disabled: disabled,
+          active: active,
+          variant: variant,
+          **options
+        }
+      end
+
+      # Add a divider
+      def divider
+        @yielded_items << { divider: true }
+      end
+
+      # Add a header
+      def header(text:)
+        @yielded_items << { header: true, text: text }
       end
 
       def dropdown_item(
@@ -183,24 +321,24 @@ module Components
         end
       end
 
-      def render_menu
+      def render_menu(&block)
         div(
           class: "hs-dropdown-menu #{@menu_class}".strip,
           aria: { labelledby: @id },
-          role: 'menu'
-        ) do
-          if block_given?
-            code_path 'Renders dropdown with custom content'
-            yield
-          else
-            code_path 'Renders dropdown with items array'
-            render_items
-          end
-        end
+          role: 'menu',
+          &block
+        )
       end
 
       def render_items
+        code_path 'Renders dropdown with items array'
         @items.each do |item|
+          dropdown_item(**item)
+        end
+      end
+
+      def render_yielded_items
+        @yielded_items.each do |item|
           dropdown_item(**item)
         end
       end

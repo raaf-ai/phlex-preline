@@ -82,6 +82,145 @@ RSpec.describe Preline::Sidebar, type: :component do
       expect(output).to include('role="navigation"')
     end
   end
+  
+  describe 'yielding interface pattern' do
+    it 'yields self when block is given' do
+      component = described_class.new
+      yielded_object = nil
+      
+      render_phlex(component) do |sidebar|
+        yielded_object = sidebar
+      end
+      
+      expect(yielded_object).to eq(component)
+    end
+
+    it 'renders sidebar using yielding interface' do
+      component = described_class.new
+      output = render_phlex(component) do |sidebar|
+        sidebar.menu do |menu|
+          menu.item(href: '/', active: true) do
+            sidebar.plain 'Dashboard'
+          end
+          menu.item(href: '/users', icon: '👥') do
+            sidebar.plain 'Users'
+          end
+          menu.item(href: '/settings', badge: 'New') do
+            sidebar.plain 'Settings'
+          end
+        end
+      end
+      
+      expect(output).to include('Dashboard')
+      expect(output).to include('Users')
+      expect(output).to include('Settings')
+      expect(output).to include('href="/"')
+      expect(output).to include('href="/users"')
+      expect(output).to include('href="/settings"')
+      expect(output).to include('bg-gray-100 text-gray-900') # active item
+      expect(output).to include('👥')
+      expect(output).to include('New')
+      expect(output).to include('hs-sidebar-menu')
+    end
+
+    it 'supports legacy pattern with separate components' do
+      component = described_class.new
+      output = render_phlex(component) do |sidebar|
+        sidebar.render Components::Preline::SidebarMenu.new do |menu|
+          menu.render Components::Preline::SidebarMenuItem.new(href: '/', active: true) { 'Home' }
+          menu.render Components::Preline::SidebarMenuItem.new(href: '/about') { 'About' }
+        end
+      end
+      
+      expect(output).to include('Home')
+      expect(output).to include('About')
+      expect(output).to include('href="/"')
+      expect(output).to include('href="/about"')
+    end
+
+    it 'renders sidebar with logo using yielding interface' do
+      component = described_class.new(
+        logo: -> { img(src: '/logo.png', alt: 'Company Logo', class: 'h-8 w-auto') }
+      )
+      output = render_phlex(component) do |sidebar|
+        sidebar.menu do |menu|
+          menu.item(href: '/') { sidebar.plain 'Home' }
+        end
+      end
+      
+      expect(output).to include('<img src="/logo.png"')
+      expect(output).to include('alt="Company Logo"')
+      expect(output).to include('class="h-8 w-auto"')
+      expect(output).to include('Home')
+    end
+
+    it 'passes attributes through yielding interface' do
+      component = described_class.new
+      output = render_phlex(component) do |sidebar|
+        sidebar.menu(class: 'custom-menu', data: { menu: 'main' }) do |menu|
+          menu.item(
+            href: '/profile',
+            class: 'custom-item',
+            data: { action: 'click->menu#navigate' }
+          ) do
+            sidebar.plain 'Profile'
+          end
+        end
+      end
+      
+      expect(output).to include('custom-menu')
+      expect(output).to include('data-menu="main"')
+      expect(output).to include('custom-item')
+      expect(output).to include('data-action="click->menu#navigate"')
+    end
+
+    it 'handles icon as proc in yielding interface' do
+      component = described_class.new
+      output = render_phlex(component) do |sidebar|
+        sidebar.menu do |menu|
+          menu.item(
+            href: '/dashboard',
+            icon: -> { svg(class: 'w-5 h-5', viewBox: '0 0 20 20') { |s| s.path(d: 'M10 10') } }
+          ) do
+            sidebar.plain 'Dashboard'
+          end
+        end
+      end
+      
+      expect(output).to include('<svg')
+      expect(output).to include('class="w-5 h-5"')
+      expect(output).to include('viewBox="0 0 20 20"')
+      expect(output).to include('<path')
+      expect(output).to include('d="M10 10"')
+      expect(output).to include('Dashboard')
+    end
+
+    it 'renders multiple menu sections' do
+      component = described_class.new
+      output = render_phlex(component) do |sidebar|
+        sidebar.menu do |menu|
+          menu.item(href: '/') { sidebar.plain 'Home' }
+          menu.item(href: '/about') { sidebar.plain 'About' }
+        end
+        
+        sidebar.div(class: 'px-4 py-2 text-xs font-semibold text-gray-400 uppercase') do
+          sidebar.plain 'Admin'
+        end
+        
+        sidebar.menu do |menu|
+          menu.item(href: '/users') { sidebar.plain 'Users' }
+          menu.item(href: '/settings') { sidebar.plain 'Settings' }
+        end
+      end
+      
+      expect(output).to include('Home')
+      expect(output).to include('About')
+      expect(output).to include('Admin')
+      expect(output).to include('Users')
+      expect(output).to include('Settings')
+      expect(output).to include('text-xs font-semibold text-gray-400 uppercase')
+    end
+  end
 end
 
 RSpec.describe Components::Preline::SidebarMenu, type: :component do

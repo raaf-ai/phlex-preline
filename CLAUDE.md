@@ -33,6 +33,10 @@ This is Phlex-Preline UI Components - a comprehensive Ruby gem providing 79+ UI 
 - **Runtime:** phlex (~> 1.0), phlex-rails (~> 1.0), i18n (~> 1.0)
 - **Development:** rspec, rubocop
 
+## Component Usage Guide
+
+For comprehensive component usage examples and patterns, see [USAGE_GUIDE.md](USAGE_GUIDE.md). This file can be included in projects using this gem to provide AI assistants with detailed component documentation.
+
 ## Component Development Patterns
 
 **Component Structure:**

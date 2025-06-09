@@ -4,7 +4,16 @@ module Components
   module Preline
     # Sidebar component for navigation panels
     #
-    # @example Basic sidebar with menu
+    # @example Basic sidebar with yielding interface
+    #   render Components::Preline::Sidebar.new do |sidebar|
+    #     sidebar.menu do |menu|
+    #       menu.item(href: "/", active: true) { "Dashboard" }
+    #       menu.item(href: "/users") { "Users" }
+    #       menu.item(href: "/settings", badge: "New") { "Settings" }
+    #     end
+    #   end
+    #
+    # @example Sidebar with nested components
     #   render Components::Preline::Sidebar.new do
     #     SidebarMenu do
     #       SidebarMenuItem(href: "/", active: true) { "Dashboard" }
@@ -42,7 +51,7 @@ module Components
         @options = attrs.except(:id, :data, :aria, :role)
       end
 
-      def view_template
+      def view_template(&block)
         code_path 'Renders sidebar component'
         nav(
           **@html_attrs.except(:data),
@@ -67,11 +76,30 @@ module Components
             div(class: 'flex-1 overflow-y-auto') do
               if block_given?
                 code_path 'Renders sidebar with content'
-                yield(self)
+                if block.parameters.any? { |type, _| %i[opt req].include?(type) }
+                  yield(self)
+                else
+                  yield
+                end
               else
                 code_path 'Renders empty sidebar'
               end
             end
+          end
+        end
+      end
+
+      # Creates a sidebar menu section
+      def menu(**attrs, &_block)
+        menu_class = ['hs-sidebar-menu flex flex-col space-y-1 p-4', attrs[:class]]
+                     .compact
+                     .join(' ')
+                     .strip
+
+        ul(class: menu_class, **attrs.except(:class)) do
+          if block_given?
+            code_path 'Renders menu with items'
+            yield(SidebarMenuInterface.new(self))
           end
         end
       end
@@ -82,6 +110,49 @@ module Components
         base = 'hs-sidebar fixed top-0 start-0 bottom-0 z-[60] w-64 bg-white border-e border-gray-200 overflow-y-auto'
 
         [base, @custom_class].compact.join(' ')
+      end
+    end
+
+    # Interface class for sidebar menu
+    class SidebarMenuInterface
+      def initialize(sidebar)
+        @sidebar = sidebar
+      end
+
+      def item(href: '#', active: false, icon: nil, badge: nil, **attrs, &block)
+        item_classes = [
+          'hs-sidebar-menu-item flex items-center gap-x-3 py-2 px-3 text-sm rounded-lg',
+          active ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-100',
+          attrs[:class]
+        ].compact.join(' ')
+
+        @sidebar.li do
+          @sidebar.a(
+            href: href,
+            class: item_classes,
+            **attrs.except(:class)
+          ) do
+            if icon
+              @sidebar.span(class: 'flex-shrink-0') do
+                if icon.is_a?(Proc)
+                  @sidebar.instance_exec(&icon)
+                else
+                  @sidebar.plain icon
+                end
+              end
+            end
+
+            @sidebar.span(class: 'flex-1') do
+              @sidebar.instance_exec(&block) if block_given?
+            end
+
+            if badge
+              @sidebar.span(class: 'inline-flex items-center gap-x-1.5 py-0.5 px-2 rounded-full text-xs font-medium bg-gray-100 text-gray-800') do
+                @sidebar.plain badge
+              end
+            end
+          end
+        end
       end
     end
 

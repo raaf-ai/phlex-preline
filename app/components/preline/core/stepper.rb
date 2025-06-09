@@ -5,7 +5,22 @@ module Components
     # A Preline UI stepper component for showing multi-step processes.
     # Supports horizontal/vertical layouts and clickable navigation.
     #
-    # @example Basic stepper
+    # @example Basic stepper with yielding interface
+    #   render Components::Preline::Stepper.new(current_step: 2) do |stepper|
+    #     stepper.step(title: "Account Details", description: "Enter your information")
+    #     stepper.step(title: "Verification", description: "Verify your email")
+    #     stepper.step(title: "Complete", description: "Setup finished")
+    #   end
+    #
+    # @example Clickable stepper with icons
+    #   render Components::Preline::Stepper.new(current_step: 3, clickable: true) do |stepper|
+    #     stepper.step(title: "Cart", icon: "shopping-cart", href: "/cart")
+    #     stepper.step(title: "Shipping", icon: "truck", href: "/shipping")
+    #     stepper.step(title: "Payment", icon: "credit-card", href: "/payment")
+    #     stepper.step(title: "Review", icon: "check-circle", href: "/review")
+    #   end
+    #
+    # @example Stepper with direct content
     #   render Components::Preline::Stepper.new(
     #     steps: [
     #       { title: "Account Details", description: "Enter your information" },
@@ -15,25 +30,11 @@ module Components
     #     current_step: 2
     #   )
     #
-    # @example Clickable stepper with icons
-    #   render Components::Preline::Stepper.new(
-    #     steps: [
-    #       { title: "Cart", icon: "shopping-cart", href: "/cart" },
-    #       { title: "Shipping", icon: "truck", href: "/shipping" },
-    #       { title: "Payment", icon: "credit-card", href: "/payment" },
-    #       { title: "Review", icon: "check-circle", href: "/review" }
-    #     ],
-    #     current_step: 3,
-    #     clickable: true
-    #   )
-    #
     # @example Vertical stepper
-    #   render Components::Preline::Stepper.new(
-    #     steps: steps,
-    #     current_step: @current_step,
-    #     vertical: true,
-    #     size: :lg
-    #   )
+    #   render Components::Preline::Stepper.new(current_step: @current_step, vertical: true, size: :lg) do |stepper|
+    #     stepper.step(title: "Step 1", description: "First step")
+    #     stepper.step(title: "Step 2", description: "Second step")
+    #   end
     class Stepper < ::Components::Preline::PrelineComponent
       # Initialize a new Stepper component
       #
@@ -60,6 +61,7 @@ module Components
         @size = size
         @custom_class = attrs.delete(:class)
         @id = id || "stepper-#{SecureRandom.hex(4)}"
+        @yielded_steps = []
       end
 
       def view_template
@@ -69,9 +71,35 @@ module Components
           aria: { label: 'Step Navigation' }
         ) do
           ol(class: 'hs-stepper-list') do
-            render_steps
+            if block_given?
+              # Try to determine if this is a yielding interface by calling with self
+              initial_steps = @yielded_steps.length
+              yield(self)
+
+              # If steps were added, we're using the yielding interface
+              if @yielded_steps.length > initial_steps
+                @yielded_steps.each_with_index do |step, index|
+                  render_step_item(step, index)
+                end
+              end
+              # If no steps were added, fall back to render_steps
+              render_steps if @yielded_steps.empty?
+            else
+              render_steps
+            end
           end
         end
+      end
+
+      # Creates a step
+      def step(title:, description: nil, icon: nil, href: nil, always_show_number: false, **attrs)
+        @yielded_steps << {
+          title: title,
+          description: description,
+          icon: icon,
+          href: href,
+          always_show_number: always_show_number
+        }.merge(attrs)
       end
 
       private
@@ -92,15 +120,19 @@ module Components
 
       def render_steps
         @steps.each_with_index do |step, index|
-          step_number = index + 1
-          is_active = step_number == @current_step
-          is_completed = step_number < @current_step
-          is_last = index == @steps.length - 1
+          render_step_item(step, index)
+        end
+      end
 
-          li(class: build_step_classes(is_active, is_completed)) do
-            render_step_content(step, step_number, is_active, is_completed)
-            render_step_line unless is_last
-          end
+      def render_step_item(step, index)
+        step_number = index + 1
+        is_active = step_number == @current_step
+        is_completed = step_number < @current_step
+        is_last = index == (@yielded_steps.any? ? @yielded_steps.length : @steps.length) - 1
+
+        li(class: build_step_classes(is_active, is_completed)) do
+          render_step_content(step, step_number, is_active, is_completed)
+          render_step_line unless is_last
         end
       end
 

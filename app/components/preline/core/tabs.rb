@@ -5,7 +5,21 @@ module Components
     # A Preline UI tabs component for organizing content into switchable panels.
     # Supports various styles, alignments, and both horizontal and vertical layouts.
     #
-    # @example Basic tabs
+    # @example Basic tabs with yielding interface
+    #   render Components::Preline::Tabs.new do |tabs|
+    #     tabs.nav do |nav|
+    #       nav.tab(active: true) { "Tab 1" }
+    #       nav.tab { "Tab 2" }
+    #       nav.tab { "Tab 3" }
+    #     end
+    #     tabs.content do |content|
+    #       content.pane(active: true) { "Content for Tab 1" }
+    #       content.pane { "Content for Tab 2" }
+    #       content.pane { "Content for Tab 3" }
+    #     end
+    #   end
+    #
+    # @example Tabs with nested components
     #   render Components::Preline::Tabs.new(
     #     tabs: [
     #       { title: "Tab 1", pane_id: "tab1", active: true },
@@ -68,9 +82,58 @@ module Components
           class: build_wrapper_classes,
           data: { 'hs-tabs': true }
         ) do
-          render_nav
-          render_content(&block)
+          if block_given? && block.parameters.any? { |type, _| %i[opt req].include?(type) }
+            yield(self)
+          else
+            render_nav
+            render_content(&block)
+          end
         end
+      end
+
+      # Creates tabs navigation section
+      def nav(**attrs, &_block)
+        @nav_attrs = attrs
+        @nav_items = []
+        yield(TabsNavInterface.new(self)) if block_given?
+
+        ul(
+          class: build_nav_classes(attrs[:class]),
+          role: 'tablist'
+        ) do
+          @nav_items.each_with_index do |item, index|
+            render_yielded_tab_item(item, index)
+          end
+        end
+      end
+
+      # Creates tabs content section
+      def content(**attrs, &_block)
+        @content_attrs = attrs
+        @content_panes = []
+        yield(TabsContentInterface.new(self)) if block_given?
+
+        classes = ['hs-tab-content', @content_class, attrs[:class]]
+                  .compact
+                  .join(' ')
+                  .strip
+        div(class: classes) do
+          @content_panes.each_with_index do |pane, index|
+            render_yielded_pane(pane, index)
+          end
+        end
+      end
+
+      # Store nav item for rendering
+      def add_nav_item(item)
+        @nav_items ||= []
+        @nav_items << item
+      end
+
+      # Store content pane for rendering
+      def add_content_pane(pane)
+        @content_panes ||= []
+        @content_panes << pane
       end
 
       def tab_pane(id:, active: false)
@@ -194,7 +257,7 @@ module Components
         end
       end
 
-      def build_nav_classes
+      def build_nav_classes(additional_class = nil)
         classes = ['hs-tabs-nav']
         if TYPES[@type].present?
           code_path "Renders #{@type} tabs style"
@@ -209,7 +272,89 @@ module Components
           classes << 'hs-tabs-fill'
         end
         classes << @nav_class
-        classes.join(' ').strip
+        classes << additional_class
+        classes.compact.join(' ').strip
+      end
+
+      def render_yielded_tab_item(item, index)
+        tab_id = "#{@id}-tab-#{index}"
+        pane_id = "#{@id}-pane-#{index}"
+        active = item[:active] || (index.zero? && @nav_items.none? { |i| i[:active] })
+
+        code_path 'Renders active tab item' if active
+
+        li(class: 'hs-tab-item', role: 'presentation') do
+          button(
+            id: "#{tab_id}-tab",
+            class: "hs-tab-link #{'hs-tab-active' if active}",
+            data: { 'hs-tab': "##{pane_id}" },
+            aria: {
+              controls: pane_id,
+              selected: active.to_s
+            },
+            role: 'tab',
+            **item[:attrs]
+          ) do
+            if item[:icon]
+              code_path 'Renders tab with icon'
+              i(class: "fas fa-#{item[:icon]} mr-2")
+            end
+            instance_exec(&item[:content]) if item[:content]
+            if item[:badge]
+              code_path 'Renders tab with badge'
+              span(class: 'hs-tab-badge ml-2') { item[:badge] }
+            end
+          end
+        end
+      end
+
+      def render_yielded_pane(pane, index)
+        pane_id = "#{@id}-pane-#{index}"
+        active = pane[:active] || (index.zero? && @content_panes.none? { |p| p[:active] })
+
+        code_path 'Renders tab pane'
+        code_path 'Renders active tab pane' if active
+        div(
+          id: pane_id,
+          class: "hs-tab-pane #{'hs-tab-pane-active' if active}",
+          role: 'tabpanel',
+          aria: { labelledby: "#{@id}-tab-#{index}-tab" },
+          **pane[:attrs]
+        ) do
+          instance_exec(&pane[:content]) if pane[:content]
+        end
+      end
+    end
+
+    # Interface class for tabs navigation
+    class TabsNavInterface
+      def initialize(tabs)
+        @tabs = tabs
+      end
+
+      def tab(active: false, icon: nil, badge: nil, **attrs, &block)
+        @tabs.add_nav_item({
+                             active: active,
+                             icon: icon,
+                             badge: badge,
+                             attrs: attrs,
+                             content: block
+                           })
+      end
+    end
+
+    # Interface class for tabs content
+    class TabsContentInterface
+      def initialize(tabs)
+        @tabs = tabs
+      end
+
+      def pane(active: false, **attrs, &block)
+        @tabs.add_content_pane({
+                                 active: active,
+                                 attrs: attrs,
+                                 content: block
+                               })
       end
     end
   end

@@ -24,6 +24,67 @@ RSpec.describe Preline::Stepper, type: :component do
       expect(output).to have_executed_code_path('Renders stepper component')
     end
 
+    it 'renders stepper with yielding interface' do
+      component = described_class.new(current_step: 2)
+      output = render_phlex(component) do |stepper|
+        stepper.step(title: 'Account Details', description: 'Enter your information')
+        stepper.step(title: 'Verification', description: 'Verify your email')
+        stepper.step(title: 'Complete', description: 'Setup finished')
+      end
+      
+      expect(output).to include('hs-stepper')
+      expect(output).to include('Account Details')
+      expect(output).to include('Enter your information')
+      expect(output).to include('Verification')
+      expect(output).to include('Verify your email')
+      expect(output).to include('Complete')
+      expect(output).to include('Setup finished')
+      expect(output).to include('hs-stepper-item-active')
+      expect(output).to include('hs-stepper-item-completed')
+    end
+
+    it 'renders clickable stepper with icons using yielding interface' do
+      component = described_class.new(current_step: 1, clickable: true)
+      output = render_phlex(component) do |stepper|
+        stepper.step(title: 'Cart', icon: 'shopping-cart', href: '/cart')
+        stepper.step(title: 'Shipping', icon: 'truck', href: '/shipping')
+        stepper.step(title: 'Payment', icon: 'credit-card', href: '/payment')
+        stepper.step(title: 'Review', icon: 'check-circle', href: '/review')
+      end
+      
+      expect(output).to include('href="/cart"')
+      expect(output).to include('href="/shipping"')
+      expect(output).to include('href="/payment"')
+      expect(output).to include('href="/review"')
+      expect(output).to include('fa-shopping-cart')
+      expect(output).to include('fa-truck')
+      expect(output).to include('fa-credit-card')
+      expect(output).to include('hs-stepper-link')
+    end
+
+    it 'supports legacy pattern with steps array' do
+      component = described_class.new(steps: basic_steps, current_step: 2)
+      output = render_phlex(component)
+      
+      expect(output).to include('Account Details')
+      expect(output).to include('Verification')
+      expect(output).to include('Complete')
+      expect(output).to include('hs-stepper-item-active')
+    end
+
+    it 'renders vertical stepper with yielding interface' do
+      component = described_class.new(current_step: 1, vertical: true, size: :lg)
+      output = render_phlex(component) do |stepper|
+        stepper.step(title: 'Step 1', description: 'First step')
+        stepper.step(title: 'Step 2', description: 'Second step')
+      end
+      
+      expect(output).to include('hs-stepper-vertical')
+      expect(output).to include('hs-stepper-lg')
+      expect(output).to include('Step 1')
+      expect(output).to include('Step 2')
+    end
+
     it 'renders all steps' do
       component = described_class.new(steps: basic_steps)
       output = render_phlex(component)

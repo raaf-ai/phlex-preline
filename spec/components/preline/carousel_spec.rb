@@ -311,4 +311,160 @@ RSpec.describe Preline::Carousel, type: :component do
       expect(output).not_to include('data-hs-carousel-autoplay')
     end
   end
+
+  describe 'yielding interface' do
+    it 'renders carousel with yielded slides' do
+      output = described_class.new.call do |carousel|
+        carousel.slide do |slide|
+          slide.image(src: '/slide1.jpg', alt: 'First slide')
+        end
+        carousel.slide do |slide|
+          slide.image(src: '/slide2.jpg', alt: 'Second slide')
+          slide.caption(title: 'Beautiful sunset', description: 'Captured at dawn')
+        end
+      end
+
+      expect(output).to include('hs-carousel')
+      expect(output).to include('hs-carousel-body')
+      expect(output).to include('src="/slide1.jpg"')
+      expect(output).to include('alt="First slide"')
+      expect(output).to include('src="/slide2.jpg"')
+      expect(output).to include('alt="Second slide"')
+      expect(output).to include('Beautiful sunset')
+      expect(output).to include('Captured at dawn')
+      expect(output).to include('hs-carousel-indicators')
+      expect(output).to include('hs-carousel-control')
+    end
+
+    it 'renders carousel with custom content' do
+      output = described_class.new.call do |carousel|
+        carousel.slide do |slide|
+          slide.content do
+            div(class: 'custom-content') { 'Custom slide content' }
+          end
+        end
+      end
+
+      expect(output).to include('custom-content')
+      expect(output).to include('Custom slide content')
+    end
+
+    it 'supports mixed content types' do
+      output = described_class.new.call do |carousel|
+        carousel.slide do |slide|
+          slide.image(src: '/image.jpg', alt: 'Image')
+          slide.caption(title: 'Image slide')
+        end
+        carousel.slide do |slide|
+          slide.content do
+            h2 { 'Custom content' }
+          end
+          slide.caption(description: 'With description only')
+        end
+      end
+
+      expect(output).to include('src="/image.jpg"')
+      expect(output).to include('Image slide')
+      expect(output).to include('<h2>Custom content</h2>')
+      expect(output).to include('With description only')
+    end
+
+    it 'sets first slide as active by default' do
+      output = described_class.new.call do |carousel|
+        carousel.slide { |s| s.image(src: '/1.jpg') }
+        carousel.slide { |s| s.image(src: '/2.jpg') }
+      end
+
+      # Check that first slide is not hidden (has just "hs-carousel-slide " without "hidden")
+      expect(output).to match(/<div[^>]*class="hs-carousel-slide "[^>]*>.*?src="\/1\.jpg"/m)
+      # Check that second slide is hidden
+      expect(output).to match(/<div[^>]*class="hs-carousel-slide hidden"[^>]*>.*?src="\/2\.jpg"/m)
+    end
+
+    it 'respects active slide setting' do
+      output = described_class.new.call do |carousel|
+        carousel.slide { |s| s.image(src: '/1.jpg') }
+        carousel.slide(active: true) { |s| s.image(src: '/2.jpg') }
+      end
+
+      # When explicitly set, respect the active setting
+      expect(output).to include('hs-carousel-slide')
+    end
+
+    it 'handles autoplay settings' do
+      output = described_class.new(autoplay: true, interval: 3000).call do |carousel|
+        carousel.slide { |s| s.image(src: '/1.jpg') }
+      end
+
+      expect(output).to include('data-hs-carousel-autoplay="true"')
+      expect(output).to include('data-hs-carousel-interval="3000"')
+    end
+
+    it 'handles controls and indicators settings' do
+      output = described_class.new(controls: false, indicators: false).call do |carousel|
+        carousel.slide { |s| s.image(src: '/1.jpg') }
+      end
+
+      expect(output).not_to include('hs-carousel-control')
+      expect(output).not_to include('hs-carousel-indicators')
+    end
+
+    it 'falls back to legacy items array when no slides yielded' do
+      output = described_class.new(
+        items: [
+          { image: '/slide1.jpg', alt: 'First' },
+          { image: '/slide2.jpg', alt: 'Second' }
+        ]
+      ).call
+
+      expect(output).to include('src="/slide1.jpg"')
+      expect(output).to include('alt="First"')
+      expect(output).to include('src="/slide2.jpg"')
+      expect(output).to include('alt="Second"')
+    end
+
+    it 'prioritizes yielded slides over items array' do
+      output = described_class.new(
+        items: [{ image: '/old.jpg' }]
+      ).call do |carousel|
+        carousel.slide { |s| s.image(src: '/new.jpg') }
+      end
+
+      expect(output).to include('src="/new.jpg"')
+      expect(output).not_to include('src="/old.jpg"')
+    end
+
+    it 'handles slide attributes' do
+      output = described_class.new.call do |carousel|
+        carousel.slide(data: { test: 'value' }, aria: { label: 'Test slide' }) do |slide|
+          slide.image(src: '/test.jpg')
+        end
+      end
+
+      expect(output).to include('data-test="value"')
+      expect(output).to include('aria-label="Test slide"')
+    end
+
+    it 'handles image attributes' do
+      output = described_class.new.call do |carousel|
+        carousel.slide do |slide|
+          slide.image(
+            src: '/test.jpg',
+            alt: 'Test image',
+            class: 'custom-image-class',
+            loading: 'lazy',
+            width: '800',
+            height: '600'
+          )
+        end
+      end
+
+      expect(output).to include('src="/test.jpg"')
+      expect(output).to include('alt="Test image"')
+      expect(output).to include('class="block w-full custom-image-class"')
+      expect(output).to include('loading="lazy"')
+      expect(output).to include('width="800"')
+      expect(output).to include('height="600"')
+    end
+  end
 end

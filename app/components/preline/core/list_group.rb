@@ -5,7 +5,28 @@ module Components
     # ListGroup component for displaying a vertical list of items
     # Creates a styled list container with optional borders and background
     #
-    # @example Basic list group
+    # @example Basic list group with yielding interface
+    #   ListGroup do |list|
+    #     list.item { "First item" }
+    #     list.item { "Second item" }
+    #     list.item { "Third item" }
+    #   end
+    #
+    # @example List group with active and disabled items
+    #   ListGroup do |list|
+    #     list.item(active: true) { "Active item" }
+    #     list.item { "Regular item" }
+    #     list.item(disabled: true) { "Disabled item" }
+    #   end
+    #
+    # @example List group with links and actions
+    #   ListGroup do |list|
+    #     list.item(href: "/dashboard") { "Dashboard" }
+    #     list.item(action: true) { "Click me" }
+    #     list.item(href: "/settings", active: true) { "Settings" }
+    #   end
+    #
+    # @example List group with direct content
     #   ListGroup do
     #     ListGroupItem { "First item" }
     #     ListGroupItem { "Second item" }
@@ -13,21 +34,9 @@ module Components
     #   end
     #
     # @example Flush list group (no borders/background)
-    #   ListGroup(flush: true) do
-    #     ListGroupItem { "Item without container styling" }
-    #     ListGroupItem { "Another item" }
-    #   end
-    #
-    # @example List group with active and disabled items
-    #   ListGroup do
-    #     ListGroupItem(active: true) { "Active item" }
-    #     ListGroupItem { "Regular item" }
-    #     ListGroupItem(disabled: true) { "Disabled item" }
-    #   end
-    #
-    # @example List group with custom styling
-    #   ListGroup(class: "shadow-lg") do
-    #     ListGroupItem { "Styled list item" }
+    #   ListGroup(flush: true) do |list|
+    #     list.item { "Item without container styling" }
+    #     list.item { "Another item" }
     #   end
     class ListGroup < ::Components::Preline::PrelineComponent
       # @param flush [Boolean] Whether to remove borders and background (flush style)
@@ -41,10 +50,28 @@ module Components
         @options = attrs.slice(:flush)
       end
 
-      def view_template
+      def view_template(&block)
         ul(**html_attrs, class: list_group_classes, role: 'list') do
-          yield if block_given?
+          if block_given?
+            if block.parameters.any? { |type, _| %i[opt req].include?(type) }
+              yield(self)
+            else
+              yield
+            end
+          end
         end
+      end
+
+      # Creates a list group item
+      def item(active: false, disabled: false, action: false, href: nil, **attrs, &block)
+        render ListGroupItem.new(
+          active: active,
+          disabled: disabled,
+          action: action,
+          href: href,
+          **attrs,
+          &block
+        )
       end
 
       private
@@ -111,7 +138,7 @@ module Components
       def view_template
         if href || action
           component = href ? :a : :button
-          send(component, component_attrs) do
+          send(component, **component_attrs) do
             yield if block_given?
           end
         else

@@ -499,6 +499,29 @@ class ApplicationLayout < Phlex::HTML
 end
 ```
 
+## Usage Guide
+
+For detailed component usage examples and best practices, see the [USAGE_GUIDE.md](USAGE_GUIDE.md) file. This guide can be included in your project's Claude.md file for AI-assisted development:
+
+```markdown
+# In your project's CLAUDE.md file:
+
+## UI Components
+
+This project uses Phlex-Preline UI components. See the component usage guide:
+https://github.com/yourusername/yourproject/blob/main/vendor/bundle/ruby/3.2.0/gems/phlex-preline-1.0.0/USAGE_GUIDE.md
+
+Or if you have the gem source locally:
+/path/to/phlex-preline/USAGE_GUIDE.md
+```
+
+The usage guide includes:
+- ✅ Complete component reference with examples
+- ✅ Both yielding interface and direct content patterns
+- ✅ Common UI patterns and best practices
+- ✅ Accessibility guidelines
+- ✅ Troubleshooting tips
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.

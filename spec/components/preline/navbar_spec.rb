@@ -370,4 +370,193 @@ RSpec.describe Preline::Navbar, type: :component do
       expect(output).not_to include('navbar-fixed')
     end
   end
+
+  describe 'yielding interface' do
+    it 'renders navbar with yielded nav items' do
+      output = described_class.new(
+        brand: { text: 'My App', href: '/' }
+      ).call do |navbar|
+        navbar.nav_item(text: 'Home', href: '/', active: true)
+        navbar.nav_item(text: 'About', href: '/about')
+        navbar.nav_item(text: 'Contact', href: '/contact')
+      end
+
+      expect(output).to include('hs-navbar')
+      expect(output).to include('My App')
+      expect(output).to include('href="/"')
+      expect(output).to include('Home')
+      expect(output).to include('About')
+      expect(output).to include('Contact')
+      expect(output).to include('hs-active')
+      expect(output).to include('href="/about"')
+      expect(output).to include('href="/contact"')
+    end
+
+    it 'renders navbar with dropdown using yielding interface' do
+      output = described_class.new(
+        brand: { text: 'App', logo: '/logo.png' },
+        variant: :dark
+      ).call do |navbar|
+        navbar.nav_item(text: 'Dashboard', href: '/dashboard', icon: 'home')
+        navbar.dropdown(text: 'Products') do |dropdown|
+          dropdown.item(text: 'All Products', href: '/products')
+          dropdown.divider
+          dropdown.item(text: 'Add New', href: '/products/new', icon: 'plus')
+        end
+      end
+
+      expect(output).to include('navbar-dark')
+      expect(output).to include('src="/logo.png"')
+      expect(output).to include('Dashboard')
+      expect(output).to include('fa-home')
+      expect(output).to include('Products')
+      expect(output).to include('hs-dropdown')
+      expect(output).to include('All Products')
+      expect(output).to include('href="/products"')
+      expect(output).to include('hs-dropdown-divider')
+      expect(output).to include('Add New')
+      expect(output).to include('fa-plus')
+    end
+
+    it 'renders navbar with mixed content' do
+      output = described_class.new(
+        brand: 'Simple Brand'
+      ).call do |navbar|
+        navbar.nav_item(text: 'Home', href: '/')
+        navbar.dropdown(text: 'Services', icon: 'cog') do |dropdown|
+          dropdown.header(text: 'Our Services')
+          dropdown.item(text: 'Web Development', href: '/services/web')
+          dropdown.item(text: 'Mobile Apps', href: '/services/mobile')
+          dropdown.divider
+          dropdown.item(text: 'Consulting', href: '/services/consulting', active: true)
+        end
+        navbar.nav_item(text: 'Contact', href: '/contact', badge: 'New')
+      end
+
+      expect(output).to include('Simple Brand')
+      expect(output).to include('Services')
+      expect(output).to include('fa-cog')
+      expect(output).to include('hs-dropdown-header')
+      expect(output).to include('Our Services')
+      expect(output).to include('Web Development')
+      expect(output).to include('Mobile Apps')
+      expect(output).to include('Consulting')
+      expect(output).to include('hs-active')
+      expect(output).to include('Contact')
+      expect(output).to include('New')
+    end
+
+    it 'supports custom content in nav items' do
+      output = described_class.new.call do |navbar|
+        navbar.nav_item do |nav|
+          nav.a(href: '/custom', class: 'hs-nav-link') do
+            nav.span { 'Custom' }
+            nav.span(class: 'badge') { '5' }
+          end
+        end
+      end
+
+      expect(output).to include('hs-nav-item')
+      expect(output).to include('href="/custom"')
+      expect(output).to include('Custom')
+      expect(output).to include('badge')
+      expect(output).to include('5')
+    end
+
+    it 'handles navbar settings' do
+      output = described_class.new(
+        fixed: :top,
+        expand: :lg,
+        container: false,
+        class: 'custom-navbar'
+      ).call do |navbar|
+        navbar.nav_item(text: 'Home', href: '/')
+      end
+
+      expect(output).to include('navbar-fixed-top')
+      expect(output).to include('navbar-expand-lg')
+      expect(output).to include('custom-navbar')
+      expect(output).not_to include('hs-container')
+    end
+
+    it 'handles badges in nav items' do
+      output = described_class.new.call do |navbar|
+        navbar.nav_item(
+          text: 'Messages',
+          href: '/messages',
+          badge: { text: '3', variant: :danger }
+        )
+      end
+
+      expect(output).to include('Messages')
+      expect(output).to include('3')
+    end
+
+    it 'handles badges in dropdown toggles' do
+      output = described_class.new.call do |navbar|
+        navbar.dropdown(text: 'Notifications', badge: '5') do |dropdown|
+          dropdown.item(text: 'View all', href: '/notifications')
+        end
+      end
+
+      expect(output).to include('Notifications')
+      expect(output).to include('5')
+      expect(output).to include('hs-nav-badge')
+    end
+
+    it 'falls back to legacy items array when no yield' do
+      output = described_class.new(
+        brand: 'App',
+        items: [
+          { text: 'Home', href: '/', active: true },
+          { text: 'About', href: '/about' }
+        ]
+      ).call
+
+      expect(output).to include('App')
+      expect(output).to include('Home')
+      expect(output).to include('About')
+      expect(output).to include('hs-active')
+    end
+
+    it 'prioritizes yielded content over items array' do
+      output = described_class.new(
+        items: [{ text: 'Old Item' }]
+      ).call do |navbar|
+        navbar.nav_item(text: 'New Item', href: '/new')
+      end
+
+      expect(output).to include('New Item')
+      expect(output).not_to include('Old Item')
+    end
+
+    it 'renders complex dropdown with all item types' do
+      output = described_class.new.call do |navbar|
+        navbar.dropdown(text: 'Admin', icon: 'user-shield') do |dropdown|
+          dropdown.header(text: 'User Management')
+          dropdown.item(text: 'Users', href: '/admin/users', icon: 'users')
+          dropdown.item(text: 'Roles', href: '/admin/roles', icon: 'key')
+          dropdown.divider
+          dropdown.header(text: 'System')
+          dropdown.item(text: 'Settings', href: '/admin/settings', icon: 'cog')
+          dropdown.item(text: 'Logs', href: '/admin/logs', icon: 'file-alt', active: true)
+        end
+      end
+
+      expect(output).to include('Admin')
+      expect(output).to include('fa-user-shield')
+      expect(output).to include('User Management')
+      expect(output).to include('System')
+      expect(output).to include('Users')
+      expect(output).to include('Roles')
+      expect(output).to include('Settings')
+      expect(output).to include('Logs')
+      expect(output).to include('fa-users')
+      expect(output).to include('fa-key')
+      expect(output).to include('fa-cog')
+      expect(output).to include('fa-file-alt')
+      expect(output).to include('hs-dropdown-divider')
+      expect(output).to include('hs-active')
+    end
+  end
 end

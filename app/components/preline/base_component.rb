@@ -40,7 +40,7 @@ module Components
       end
 
       def code_path(path)
-        return unless defined?(Rails) && Rails.env.local?
+        return unless defined?(Rails) && Rails.env.test?
 
         comment { "Codepath: #{path} executed" }
       end

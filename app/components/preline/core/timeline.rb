@@ -4,19 +4,19 @@ module Components
   module Preline
     # Timeline component for displaying chronological events or steps
     #
-    # @example Basic timeline
-    #   render Components::Preline::Timeline.new do
-    #     TimelineItem(completed: true) do
-    #       TimelineIcon(variant: :success) { "✓" }
-    #       TimelineContent do
+    # @example Basic timeline with yielding interface
+    #   render Components::Preline::Timeline.new do |timeline|
+    #     timeline.item(completed: true) do |item|
+    #       item.icon(variant: :success) { "✓" }
+    #       item.content do
     #         h3 { "Project Started" }
     #         p { "Initial planning phase completed" }
     #       end
     #     end
     #
-    #     TimelineItem(active: true) do
-    #       TimelineIcon(variant: :info)
-    #       TimelineContent do
+    #     timeline.item(active: true) do |item|
+    #       item.icon(variant: :info)
+    #       item.content do
     #         h3 { "Development Phase" }
     #         p { "Currently in progress" }
     #       end
@@ -24,15 +24,26 @@ module Components
     #   end
     #
     # @example Timeline with dates
-    #   render Components::Preline::Timeline.new do
+    #   render Components::Preline::Timeline.new do |timeline|
     #     @events.each do |event|
-    #       TimelineItem(completed: event.completed?, active: event.current?) do
-    #         TimelineIcon(variant: event.status_variant)
-    #         TimelineContent do
+    #       timeline.item(completed: event.completed?, active: event.current?) do |item|
+    #         item.icon(variant: event.status_variant)
+    #         item.content do
     #           time { event.date.strftime("%B %d, %Y") }
     #           h3 { event.title }
     #           p { event.description }
     #         end
+    #       end
+    #     end
+    #   end
+    #
+    # @example Timeline with direct content
+    #   render Components::Preline::Timeline.new do
+    #     TimelineItem(completed: true) do
+    #       TimelineIcon(variant: :success) { "✓" }
+    #       TimelineContent do
+    #         h3 { "Project Started" }
+    #         p { "Initial planning phase completed" }
     #       end
     #     end
     #   end
@@ -45,9 +56,22 @@ module Components
         @options = attrs.except(:id, :data, :aria, :role)
       end
 
-      def view_template
+      def view_template(&block)
         div(**@html_attrs, **@options, class: timeline_classes) do
-          yield if block_given?
+          if block_given?
+            if block.parameters.any? { |type, _| %i[opt req].include?(type) }
+              yield(self)
+            else
+              yield
+            end
+          end
+        end
+      end
+
+      # Creates a timeline item
+      def item(active: false, completed: false, **attrs, &_block)
+        render TimelineItem.new(active: active, completed: completed, **attrs) do
+          yield(TimelineItemInterface.new(self)) if block_given?
         end
       end
 
@@ -153,6 +177,23 @@ module Components
       def content_classes
         base = 'hs-timeline-content pb-8'
         [base, @custom_class].compact.join(' ')
+      end
+    end
+
+    # Interface class for timeline items
+    class TimelineItemInterface
+      def initialize(timeline)
+        @timeline = timeline
+      end
+
+      # Creates a timeline icon
+      def icon(variant: :default, **attrs, &block)
+        @timeline.render TimelineIcon.new(variant: variant, **attrs, &block)
+      end
+
+      # Creates timeline content
+      def content(**attrs, &block)
+        @timeline.render TimelineContent.new(**attrs, &block)
       end
     end
   end
