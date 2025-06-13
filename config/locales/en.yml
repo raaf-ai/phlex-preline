@@ -34,6 +34,28 @@ en:
       browse: "Browse"
       or_drag_drop: "or drag and drop"
     
+    file_upload:
+      drop_or_browse: "Drop your file here or browse"
+      max_size: "Pick a file up to"
+      success: "Upload successful"
+      error: "Upload failed"
+    
+    file_upload_gallery:
+      message: "Drop files here to upload"
+      or: "or"
+      browse_files: "Browse files"
+      accepted_types: "Accepted"
+      max_files: "Maximum files"
+      images: "Images"
+      videos: "Videos"
+      audio: "Audio files"
+    
+    single_image_upload:
+      upload: "Upload photo"
+      delete: "Delete"
+      current_image: "Current image"
+      all_images: "All image formats"
+    
     # Common component text
     common:
       loading: "Loading..."

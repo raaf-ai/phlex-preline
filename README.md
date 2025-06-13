@@ -30,9 +30,41 @@ And then execute:
 
     $ bundle install
 
-Or install it yourself as:
+### Quick Setup with Generator
 
-    $ gem install phlex-preline
+For the quickest setup, run the installation generator:
+
+```bash
+$ rails generate preline:install
+```
+
+This will:
+- Copy the preline-components.css file to your app/assets/stylesheets directory
+- Set up JavaScript controllers (auto-detects importmap or node)
+- Add stylesheet imports to your application CSS file (works with tailwindcss-rails)
+- Configure your application for Preline components
+- Show important Tailwind configuration instructions
+
+For manual installation or more options, see below.
+
+### Tailwind CSS Configuration
+
+This gem requires Tailwind CSS to be properly configured in your Rails application. The gem's components use Tailwind utility classes that need to be included in your build.
+
+**Important:** Add the gem's component paths to your `tailwind.config.js`:
+
+```javascript
+module.exports = {
+  content: [
+    './app/**/*.{erb,haml,html,slim,rb}',
+    // Add this line to scan Phlex-Preline components
+    './vendor/bundle/**/gems/phlex-preline-*/app/components/**/*.rb',
+  ],
+  // ... rest of your config
+}
+```
+
+For detailed Tailwind setup instructions, see [TAILWIND_SETUP.md](TAILWIND_SETUP.md).
 
 ## Quick Start
 
@@ -43,16 +75,33 @@ Or install it yourself as:
 @import "themes"; /* Optional: Include theme system with CSS variables */
 ```
 
-2. **Include JavaScript** for interactive components (Stimulus):
+2. **Include JavaScript** for interactive components:
+
+### Option A: Using Importmap (Rails 7 default)
+
+The generator handles this automatically, but for manual setup:
+
+```ruby
+# config/importmap.rb
+pin "@preline/file-upload", to: "preline/file_upload_controller.js"
+pin "@preline/file-upload-gallery", to: "preline/file_upload_gallery_controller.js"
+pin "@preline/single-image-upload", to: "preline/single_image_upload_controller.js"
+```
 
 ```javascript
-// app/javascript/controllers/application.js
-import { Application } from "@hotwired/stimulus"
-import PrelineControllers from "phlex-preline/controllers"
+// app/javascript/controllers/index.js
+import FileUploadController from "@preline/file-upload"
+import FileUploadGalleryController from "@preline/file-upload-gallery"
+import SingleImageUploadController from "@preline/single-image-upload"
 
-const application = Application.start()
-PrelineControllers.register(application)
+application.register("file-upload", FileUploadController)
+application.register("file-upload-gallery", FileUploadGalleryController)
+application.register("single-image-upload", SingleImageUploadController)
 ```
+
+### Option B: Using Node-based bundlers (esbuild, webpack, vite)
+
+Run the generator with `rails generate preline:install` and it will copy the controllers to your app.
 
 3. **Use components** in your Phlex views:
 
@@ -521,6 +570,80 @@ The usage guide includes:
 - ✅ Common UI patterns and best practices
 - ✅ Accessibility guidelines
 - ✅ Troubleshooting tips
+
+## File Upload Components
+
+The gem includes advanced file upload components with drag-and-drop, validation, and preview features:
+
+### Basic File Upload
+```ruby
+render Components::Preline::FileUpload.new(
+  id: "document-upload",
+  name: "document",
+  max_size: "10MB",
+  accept: ".pdf,.doc,.docx"
+)
+```
+
+### File Upload with Error Handling
+```ruby
+render Components::Preline::FileUploadWithError.new(
+  id: "resume-upload",
+  name: "resume",
+  max_size: "5MB",
+  accept: ".pdf",
+  success_message: "Resume uploaded successfully!",
+  error_message: "File too large or wrong format"
+)
+```
+
+### Image Gallery Upload
+```ruby
+render Components::Preline::FileUploadGallery.new(
+  id: "photos",
+  name: "photos[]",
+  accept: "image/*",
+  max_files: 10,
+  max_size: "5MB",
+  preview: true,
+  columns: 4
+)
+```
+
+### Single Image Upload
+```ruby
+render Components::Preline::SingleImageUpload.new(
+  name: "avatar",
+  current_image: user.avatar_url,
+  delete_name: "delete_avatar",
+  max_size: "2MB",
+  preview_size: :medium
+)
+```
+
+### JavaScript Events
+
+The file upload components dispatch custom events you can listen to:
+
+```javascript
+// File selected
+document.addEventListener("file-upload:selected", (event) => {
+  const files = event.detail.files;
+  // Process files...
+});
+
+// Gallery updated
+document.addEventListener("file-upload-gallery:changed", (event) => {
+  const files = event.detail.files;
+  // Update UI...
+});
+
+// Image changed/deleted
+document.addEventListener("single-image-upload:changed", (event) => {
+  const file = event.detail.file;
+  // Handle new image...
+});
+```
 
 ## Development
 
