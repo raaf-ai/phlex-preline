@@ -222,13 +222,16 @@ module Components
       end
 
       # Add a divider
-      def divider
-        @yielded_items << { divider: true }
+      # @param attrs [Hash] Additional HTML attributes for the divider
+      def divider(**attrs)
+        @yielded_items << { divider: true, attrs: attrs }
       end
 
       # Add a header
-      def header(text:)
-        @yielded_items << { header: true, text: text }
+      # @param text [String] The header text
+      # @param attrs [Hash] Additional HTML attributes for the header
+      def header(text:, **attrs)
+        @yielded_items << { header: true, text: text, attrs: attrs }
       end
 
       def dropdown_item(
@@ -244,10 +247,12 @@ module Components
       )
         if divider
           code_path 'Renders dropdown divider'
-          div(class: 'hs-dropdown-divider')
+          divider_attrs = options[:attrs] || {}
+          div(**divider_attrs, class: merge_classes('hs-dropdown-divider', divider_attrs[:class]))
         elsif header
           code_path 'Renders dropdown header'
-          h6(class: 'hs-dropdown-header') { text }
+          header_attrs = options[:attrs] || {}
+          h6(**header_attrs, class: merge_classes('hs-dropdown-header', header_attrs[:class])) { text }
         else
           code_path 'Renders dropdown item'
           link_options = {
@@ -272,6 +277,10 @@ module Components
       end
 
       private
+
+      def merge_classes(*classes)
+        classes.compact.join(' ').strip.presence
+      end
 
       def render_trigger
         button(

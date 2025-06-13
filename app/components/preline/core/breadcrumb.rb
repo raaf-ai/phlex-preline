@@ -111,15 +111,16 @@ module Components
       )
         @items = validate_array!(items, 'items')
         @separator = validate_separator!(separator)
-        @custom_class = attrs.delete(:class)
         @item_class = item_class
         @yielded_items = []
+
+        initialize_component(attrs)
       end
 
       def view_template
         code_path 'Renders breadcrumb component'
         nav(aria: { label: 'Breadcrumb' }) do
-          ol(class: "hs-breadcrumb #{@custom_class}".strip) do
+          ol(**component_attributes(additional_classes: ['hs-breadcrumb'])) do
             if block_given?
               yield(self)
               # Always render yielded items if we have any, regardless of whether they were added before or after yield
@@ -136,8 +137,9 @@ module Components
       # @param text [String] The display text for the breadcrumb item
       # @param href [String, nil] The URL for the item (nil for current page)
       # @param icon [String, nil] FontAwesome icon name to display before text
-      def item(text:, href: nil, icon: nil)
-        @yielded_items << { text: text, href: href, icon: icon }
+      # @param attrs [Hash] Additional HTML attributes for the item
+      def item(text:, href: nil, icon: nil, **attrs)
+        @yielded_items << { text: text, href: href, icon: icon, attrs: attrs }
       end
 
       # Adds a home breadcrumb item
@@ -145,8 +147,9 @@ module Components
       # @param text [String] The display text (default: "Home")
       # @param href [String] The URL for home (default: "/")
       # @param icon [String, nil] FontAwesome icon name (default: "home")
-      def home(text: 'Home', href: '/', icon: 'home')
-        item(text: text, href: href, icon: icon)
+      # @param attrs [Hash] Additional HTML attributes for the item
+      def home(text: 'Home', href: '/', icon: 'home', **attrs)
+        item(text: text, href: href, icon: icon, **attrs)
       end
 
       # Adds multiple breadcrumb items at once
@@ -200,7 +203,8 @@ module Components
       end
 
       def render_item(item, is_last)
-        li(class: build_item_classes(is_last)) do
+        li_attrs = extract_and_merge_attrs(item[:attrs], class: build_item_classes(is_last, item[:attrs]&.dig(:class)))
+        li(**li_attrs) do
           if is_last || !item[:href]
             render_active_item(item)
           else
@@ -212,16 +216,27 @@ module Components
       end
 
       def render_link_item(item)
-        a(href: item[:href], class: 'hs-breadcrumb-link') do
+        # Extract attributes but keep href and merge classes
+        link_attrs = extract_and_merge_attrs(
+          item[:attrs],
+          href: item[:href],
+          class: merge_classes('hs-breadcrumb-link', item[:attrs]&.dig(:class))
+        )
+
+        a(**link_attrs) do
           render_item_content(item)
         end
       end
 
       def render_active_item(item)
-        span(
-          class: 'hs-breadcrumb-active',
+        # Extract attributes and merge with defaults
+        span_attrs = extract_and_merge_attrs(
+          item[:attrs],
+          class: merge_classes('hs-breadcrumb-active', item[:attrs]&.dig(:class)),
           aria: { current: 'page' }
-        ) do
+        )
+
+        span(**span_attrs) do
           render_item_content(item)
         end
       end
@@ -261,11 +276,26 @@ module Components
         end
       end
 
-      def build_item_classes(is_last)
+      def build_item_classes(is_last, additional_class = nil)
         classes = ['hs-breadcrumb-item']
         classes << 'hs-breadcrumb-item-active' if is_last
-        classes << @item_class
-        classes.join(' ').strip
+        classes << @item_class if @item_class.present?
+        classes << additional_class if additional_class.present?
+        classes.compact.join(' ').strip
+      end
+
+      def extract_and_merge_attrs(attrs, defaults = {})
+        return defaults if attrs.nil?
+
+        # Remove class from attrs since we handle it separately
+        extracted_attrs = attrs.except(:class)
+
+        # Merge with defaults
+        defaults.merge(extracted_attrs)
+      end
+
+      def merge_classes(*classes)
+        classes.compact.join(' ').strip.presence
       end
 
       def validate_separator!(separator)

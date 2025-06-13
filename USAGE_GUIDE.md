@@ -47,6 +47,13 @@ Breadcrumb do |breadcrumb|
   breadcrumb.item(text: "Current Page")
 end
 
+# With custom classes on items
+Breadcrumb do |breadcrumb|
+  breadcrumb.home(class: "font-semibold")
+  breadcrumb.item(text: "Products", href: "/products", class: "text-blue-600")
+  breadcrumb.item(text: "Current", class: "text-gray-500")
+end
+
 # Auto-generate from URL path
 Breadcrumb do |breadcrumb|
   breadcrumb.from_path(request.path, labels: {
@@ -153,6 +160,14 @@ Dropdown(
   dropdown.item(text: "Settings", href: "/settings", icon: "cog")
   dropdown.divider
   dropdown.item(text: "Sign out", href: "/logout", icon: "sign-out-alt")
+end
+
+# With custom classes
+Dropdown(trigger_text: "Actions") do |dropdown|
+  dropdown.header(text: "Quick Actions", class: "font-bold text-lg")
+  dropdown.divider(class: "my-2")
+  dropdown.item(text: "Edit", icon: "edit", class: "hover:bg-blue-50")
+  dropdown.item(text: "Delete", icon: "trash", class: "text-red-600 hover:bg-red-50")
 end
 ```
 

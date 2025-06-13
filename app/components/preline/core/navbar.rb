@@ -340,13 +340,16 @@ module Components
       end
 
       # Add a divider
-      def divider
-        @navbar.instance_variable_get(:@dropdown_items) << { divider: true }
+      # @param attrs [Hash] Additional HTML attributes for the divider
+      def divider(**attrs)
+        @navbar.instance_variable_get(:@dropdown_items) << { divider: true, attrs: attrs }
       end
 
       # Add a header
-      def header(text:)
-        @navbar.instance_variable_get(:@dropdown_items) << { header: true, text: text }
+      # @param text [String] The header text
+      # @param attrs [Hash] Additional HTML attributes for the header
+      def header(text:, **attrs)
+        @navbar.instance_variable_get(:@dropdown_items) << { header: true, text: text, attrs: attrs }
       end
     end
   end
