@@ -1,174 +1,67 @@
-import { Controller } from "@hotwired/stimulus"
+// Official Preline UI File Upload initialization
+// Requires Dropzone.js and Preline UI JavaScript libraries
 
-export default class extends Controller {
-  static targets = ["input", "dropzone", "message", "progress", "error", "success"]
+// Initialize file upload components when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize all file upload instances
+  const fileUploadElements = document.querySelectorAll('[id^="hs-file-upload"]');
   
-  connect() {
-    this.setupDropzone()
-    this.maxSize = this.data.get("maxSize") || null
-    this.accept = this.data.get("accept") || null
-    this.multiple = this.data.get("multiple") === "true"
-    
-    // Hide success/error messages initially
-    if (this.hasErrorTarget) this.errorTarget.classList.add("hidden")
-    if (this.hasSuccessTarget) this.successTarget.classList.add("hidden")
-  }
-
-  setupDropzone() {
-    if (!this.hasDropzoneTarget) return
-
-    // Create hidden file input if not exists
-    if (!this.hasInputTarget) {
-      this.inputTarget = document.createElement("input")
-      this.inputTarget.type = "file"
-      this.inputTarget.className = "hidden"
-      this.inputTarget.name = this.data.get("name") || "file"
-      if (this.accept) this.inputTarget.accept = this.accept
-      if (this.multiple) this.inputTarget.multiple = true
-      this.element.appendChild(this.inputTarget)
+  fileUploadElements.forEach(element => {
+    if (typeof HSFileUpload !== 'undefined') {
+      HSFileUpload.getInstance(element, true);
+    } else {
+      console.warn('HSFileUpload not found. Please ensure Preline UI JavaScript is loaded.');
     }
+  });
+});
 
-    // Add event listeners
-    this.dropzoneTarget.addEventListener("click", () => this.inputTarget.click())
-    this.inputTarget.addEventListener("change", (e) => this.handleFiles(e.target.files))
-    
-    // Drag and drop events
-    this.dropzoneTarget.addEventListener("dragover", (e) => this.handleDragOver(e))
-    this.dropzoneTarget.addEventListener("dragleave", (e) => this.handleDragLeave(e))
-    this.dropzoneTarget.addEventListener("drop", (e) => this.handleDrop(e))
-  }
+// Auto-reinitialize when new file upload elements are added dynamically
+if (typeof HSFileUpload !== 'undefined') {
+  // Use MutationObserver to watch for dynamically added file upload elements
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      mutation.addedNodes.forEach(function(node) {
+        if (node.nodeType === 1) { // Element node
+          const fileUploads = node.querySelectorAll ? node.querySelectorAll('[id^="hs-file-upload"]') : [];
+          fileUploads.forEach(element => {
+            HSFileUpload.getInstance(element, true);
+          });
+          
+          // Check if the added node itself is a file upload
+          if (node.id && node.id.startsWith('hs-file-upload')) {
+            HSFileUpload.getInstance(node, true);
+          }
+        }
+      });
+    });
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
 
-  handleDragOver(e) {
-    e.preventDefault()
-    e.stopPropagation()
-    this.dropzoneTarget.classList.add("border-blue-500", "bg-blue-50")
-  }
-
-  handleDragLeave(e) {
-    e.preventDefault()
-    e.stopPropagation()
-    this.dropzoneTarget.classList.remove("border-blue-500", "bg-blue-50")
-  }
-
-  handleDrop(e) {
-    e.preventDefault()
-    e.stopPropagation()
-    this.dropzoneTarget.classList.remove("border-blue-500", "bg-blue-50")
-    
-    const files = e.dataTransfer.files
-    this.handleFiles(files)
-  }
-
-  handleFiles(files) {
-    const validFiles = []
-    const errors = []
-
-    for (let file of files) {
-      const validation = this.validateFile(file)
-      if (validation.valid) {
-        validFiles.push(file)
-      } else {
-        errors.push(validation.error)
+// Export for manual initialization if needed
+window.PrelineFileUpload = {
+  init: function(selector) {
+    const elements = document.querySelectorAll(selector || '[id^="hs-file-upload"]');
+    elements.forEach(element => {
+      if (typeof HSFileUpload !== 'undefined') {
+        HSFileUpload.getInstance(element, true);
       }
-    }
-
-    if (errors.length > 0) {
-      this.showError(errors.join(", "))
-    } else if (validFiles.length > 0) {
-      this.uploadFiles(validFiles)
-    }
-  }
-
-  validateFile(file) {
-    // Check file size
-    if (this.maxSize) {
-      const maxBytes = this.parseSize(this.maxSize)
-      if (file.size > maxBytes) {
-        return { valid: false, error: `${file.name} exceeds maximum size of ${this.maxSize}` }
-      }
-    }
-
-    // Check file type
-    if (this.accept) {
-      const accepted = this.accept.split(",").map(t => t.trim())
-      const fileType = file.type
-      const fileExt = "." + file.name.split(".").pop().toLowerCase()
-      
-      let isAccepted = false
-      for (let accept of accepted) {
-        if (accept.startsWith(".") && fileExt === accept.toLowerCase()) {
-          isAccepted = true
-          break
-        } else if (accept.endsWith("/*") && fileType.startsWith(accept.slice(0, -2))) {
-          isAccepted = true
-          break
-        } else if (fileType === accept) {
-          isAccepted = true
-          break
+    });
+  },
+  
+  destroy: function(selector) {
+    const elements = document.querySelectorAll(selector || '[id^="hs-file-upload"]');
+    elements.forEach(element => {
+      if (typeof HSFileUpload !== 'undefined') {
+        const instance = HSFileUpload.getInstance(element);
+        if (instance) {
+          instance.destroy();
         }
       }
-      
-      if (!isAccepted) {
-        return { valid: false, error: `${file.name} is not an accepted file type` }
-      }
-    }
-
-    return { valid: true }
+    });
   }
-
-  parseSize(sizeStr) {
-    const units = { B: 1, KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 }
-    const match = sizeStr.match(/^(\d+(?:\.\d+)?)\s*([KMGT]?B)$/i)
-    if (!match) return 0
-    
-    const value = parseFloat(match[1])
-    const unit = match[2].toUpperCase()
-    return value * (units[unit] || 1)
-  }
-
-  uploadFiles(files) {
-    // Show success message
-    this.showSuccess()
-    
-    // Dispatch custom event with files
-    const event = new CustomEvent("file-upload:selected", {
-      detail: { files: Array.from(files) },
-      bubbles: true
-    })
-    this.element.dispatchEvent(event)
-    
-    // Update input files if we have an input target
-    if (this.hasInputTarget) {
-      const dataTransfer = new DataTransfer()
-      for (let file of files) {
-        dataTransfer.items.add(file)
-      }
-      this.inputTarget.files = dataTransfer.files
-      
-      // Trigger change event on input
-      this.inputTarget.dispatchEvent(new Event("change", { bubbles: true }))
-    }
-  }
-
-  showError(message) {
-    if (this.hasErrorTarget) {
-      this.errorTarget.classList.remove("hidden")
-      const messageEl = this.errorTarget.querySelector(".hs-file-upload-error-message")
-      if (messageEl) messageEl.textContent = message
-    }
-    
-    if (this.hasSuccessTarget) {
-      this.successTarget.classList.add("hidden")
-    }
-  }
-
-  showSuccess() {
-    if (this.hasSuccessTarget) {
-      this.successTarget.classList.remove("hidden")
-    }
-    
-    if (this.hasErrorTarget) {
-      this.errorTarget.classList.add("hidden")
-    }
-  }
-}
+};

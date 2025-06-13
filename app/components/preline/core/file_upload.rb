@@ -2,77 +2,158 @@
 
 module Components
   module Preline
-    # FileUpload component for drag-and-drop file uploads
+    # FileUpload component following official Preline UI patterns
+    # Requires Dropzone.js plugin and Preline UI JavaScript
     #
-    # @example Basic file upload with drag-and-drop
+    # @example Basic file upload
     #   render Components::Preline::FileUpload.new(
-    #     id: "file-upload",
-    #     name: "files",
+    #     id: "hs-file-upload",
     #     max_size: "2MB"
     #   )
     #
-    # @example With custom message
+    # @example With custom message and constraints
     #   render Components::Preline::FileUpload.new(
     #     id: "document-upload",
-    #     name: "documents[]",
-    #     multiple: true
+    #     max_size: "10MB",
+    #     message: "Drop your documents here"
     #   ) do
-    #     p(class: "text-xs text-gray-400 mt-2") { "PDF, DOC, DOCX up to 10MB" }
+    #     span(class: "text-xs text-gray-400") { "PDF, DOC, DOCX files only" }
     #   end
     class FileUpload < ::Components::Preline::PrelineComponent
-      # @param id [String] Required ID for the dropzone element
-      # @param name [String] Input name attribute
+      # @param id [String] Required ID for the file upload element
       # @param max_size [String] Maximum file size (e.g., "2MB", "5MB")
-      # @param accept [String] Accepted file types
-      # @param multiple [Boolean] Whether to allow multiple files
       # @param message [String] Custom drop message
+      # @param variant [String] Upload variant: 'basic', 'gallery', 'single', 'input'
       # @param attrs [Hash] Additional HTML attributes
-      def initialize(id:, name:, max_size: nil, accept: nil, multiple: false, message: nil, **attrs)
+      def initialize(id:, max_size: nil, message: nil, variant: 'basic', **attrs)
         @id = id
-        @name = name
         @max_size = max_size
-        @accept = accept
-        @multiple = validate_boolean!(multiple, 'multiple')
         @message = message
+        @variant = validate_inclusion!(variant, 'variant', %w[basic gallery single input])
 
         initialize_component(attrs)
       end
 
       def view_template
-        div(**component_attributes(additional_classes: ['hs-file-upload-wrapper']),
-            data: { controller: 'file-upload' }.merge(dropzone_data_attributes)) do
-          div(class: 'hs-file-upload-container') do
-            div(
-              id: @id,
-              class: 'hs-file-upload-dropzone',
-              data: { 'file-upload-target': 'dropzone' }
-            ) do
-              div(class: 'hs-file-upload-message') do
-                plain @message || default_message
-                p(class: 'hs-file-upload-constraint') { "#{I18n.t('preline.file_upload.max_size')} #{@max_size}." } if @max_size
-                yield if block_given?
-              end
-            end
-          end
+        case @variant
+        when 'basic'
+          render_basic_upload
+        when 'gallery'
+          render_gallery_upload
+        when 'single'
+          render_single_upload
+        when 'input'
+          render_input_upload
         end
       end
 
       private
 
+      def render_basic_upload
+        div(id: @id, **component_attributes(additional_classes: ['w-full'])) do
+          # File upload dropzone following Preline patterns
+          label(
+            for: "#{@id}-input",
+            class: 'group p-4 sm:p-7 block cursor-pointer text-center border-2 border-dashed border-gray-200 rounded-lg focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 dark:border-neutral-700'
+          ) do
+            input(
+              id: "#{@id}-input",
+              name: 'file-upload',
+              type: 'file',
+              class: 'sr-only',
+              multiple: true
+            )
+            svg(
+              class: 'size-10 mx-auto text-gray-400 dark:text-neutral-600',
+              xmlns: 'http://www.w3.org/2000/svg',
+              width: '24',
+              height: '24',
+              viewBox: '0 0 24 24',
+              fill: 'none',
+              stroke: 'currentColor',
+              stroke_width: '2',
+              stroke_linecap: 'round',
+              stroke_linejoin: 'round'
+            ) do |s|
+              s.path(d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4')
+              s.polyline(points: '17 8 12 3 7 8')
+              s.line(x1: '12', y1: '3', x2: '12', y2: '15')
+            end
+            Typography(
+              tag: :span,
+              class: 'mt-2 block text-sm text-gray-800 dark:text-neutral-200'
+            ) do
+              plain @message || default_message
+            end
+            if @max_size
+              Typography(
+                tag: :span,
+                class: 'mt-1 block text-xs text-gray-400 dark:text-neutral-400'
+              ) do
+                plain "#{I18n.t('preline.file_upload.max_size')} #{@max_size}"
+              end
+            end
+            yield if block_given?
+          end
+        end
+      end
+
+      def render_gallery_upload
+        div(id: @id, **component_attributes) do
+          div(class: 'hs-dropzone hs-dropzone-gallery') do
+            div(class: 'dz-message') do
+              plain @message || I18n.t('preline.file_upload.drop_images')
+              if @max_size
+                span(class: 'block text-xs text-gray-400 mt-1') do
+                  plain "#{I18n.t('preline.file_upload.max_size')} #{@max_size}"
+                end
+              end
+              yield if block_given?
+            end
+          end
+        end
+      end
+
+      def render_single_upload
+        div(id: @id, **component_attributes) do
+          div(class: 'hs-dropzone hs-dropzone-single') do
+            div(class: 'dz-message') do
+              plain @message || I18n.t('preline.file_upload.drop_single')
+              if @max_size
+                span(class: 'block text-xs text-gray-400 mt-1') do
+                  plain "#{I18n.t('preline.file_upload.max_size')} #{@max_size}"
+                end
+              end
+              yield if block_given?
+            end
+          end
+        end
+      end
+
+      def render_input_upload
+        div(id: @id, **component_attributes) do
+          input(
+            type: 'file',
+            class: 'hs-file-input',
+            data: {
+              'hs-file-upload-file-success': success_template,
+              'hs-file-upload-file-error': error_template
+            }
+          )
+          yield if block_given?
+        end
+      end
+
       def default_message
         I18n.t('preline.file_upload.drop_or_browse')
       end
 
-      def dropzone_data_attributes
-        data = {
-          'file-upload-name-value': @name
-        }
+      def success_template
+        '<div class="hs-file-upload-success">File uploaded successfully</div>'
+      end
 
-        data['file-upload-accept-value'] = @accept if @accept
-        data['file-upload-multiple-value'] = @multiple.to_s if @multiple
-        data['file-upload-max-size-value'] = @max_size if @max_size
-
-        data
+      def error_template
+        '<div class="hs-file-upload-error">Upload failed</div>'
       end
     end
   end
