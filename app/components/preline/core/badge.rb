@@ -31,6 +31,8 @@ module Components
     #     data: { controller: "removable" }
     #   )
     class Badge < ::Components::Preline::PrelineComponent
+      # Available badge color variants mapped to their CSS classes
+      # @return [Hash<Symbol, String>] Variant symbols to CSS class mappings
       VARIANTS = {
         primary: 'hs-badge-primary',
         secondary: 'hs-badge-secondary',
@@ -43,11 +45,24 @@ module Components
         gray: 'hs-badge-gray'
       }.freeze
 
+      # Available badge sizes mapped to their CSS classes
+      # @return [Hash<Symbol, String>] Size symbols to CSS class mappings
       SIZES = {
         xs: 'hs-badge-xs',
         sm: 'hs-badge-sm',
         md: '', # default
         lg: 'hs-badge-lg'
+      }.freeze
+
+      # Legacy size mappings for backward compatibility
+      # @deprecated Use the short form sizes (:xs, :sm, :md, :lg) instead
+      # @return [Hash<Symbol, Symbol>] Legacy size names to modern equivalents
+      # @since 0.2.0
+      SIZE_ALIASES = {
+        'extra-small': :xs,
+        small: :sm,
+        medium: :md,
+        large: :lg
       }.freeze
 
       # Initialize a new Badge component
@@ -82,6 +97,10 @@ module Components
         initialize_component(attributes)
       end
 
+      # Renders the badge component as a span element with appropriate styling.
+      #
+      # @return [void]
+      # @api public
       def view_template
         badge_attrs = component_attributes(additional_classes: build_classes)
 
@@ -92,6 +111,11 @@ module Components
 
       private
 
+      # Builds the complete CSS class array for the badge element
+      # by combining base classes with variant, size, and style modifiers.
+      #
+      # @return [Array<String>] Array of CSS class names
+      # @api private
       def build_classes
         base_classes = ['hs-badge']
         base_classes << VARIANTS[@variant] if VARIANTS[@variant]
@@ -110,6 +134,31 @@ module Components
         base_classes
       end
 
+      # Normalizes size parameters by converting legacy size names to modern equivalents
+      # with deprecation warnings for backward compatibility.
+      #
+      # @param size [Symbol, String] The size parameter to normalize
+      # @return [Symbol] The normalized size symbol
+      # @api private
+      # @since 0.2.0
+      # @deprecated Legacy size names (small, large) will be removed in v1.0.0
+      def normalize_size(size)
+        size_sym = size.to_sym
+        
+        # Check if it's a legacy size name
+        if SIZE_ALIASES.key?(size_sym)
+          warn "[DEPRECATION] Size '#{size}' is deprecated. Use '#{SIZE_ALIASES[size_sym]}' instead. This will be removed in version 1.0.0."
+          SIZE_ALIASES[size_sym]
+        else
+          size_sym
+        end
+      end
+
+      # Renders the internal content of the badge including text, optional icon,
+      # and optional remove button for dismissible badges.
+      #
+      # @return [void]
+      # @api private
       def render_content
         if @icon
           code_path 'Renders badge with icon'

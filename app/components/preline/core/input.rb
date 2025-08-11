@@ -2,10 +2,14 @@
 
 module Components
   module Preline
-    # A Preline UI input component for various form field types.
+    # A comprehensive Preline UI input component for various form field types.
     # Supports text inputs, textareas, selects, checkboxes, and more with consistent styling.
+    # Features model-aware binding for automatic value population and error display.
     #
-    # @example Basic text input
+    # @since 0.1.0
+    # @version 0.2.0
+    #
+    # @example Basic text input with form builder
     #   render Components::Preline::Input.new(
     #     form: form,
     #     field: :email,
@@ -14,6 +18,14 @@ module Components
     #     placeholder: "you@example.com",
     #     required: true
     #   )
+    #
+    # @example Model-aware input (NEW in v0.2.0)
+    #   render Components::Preline::Input.new(
+    #     model: @user,
+    #     field: :email,
+    #     type: :email,
+    #     label: "Email Address"
+    #   )  # Automatically binds value and errors from @user
     #
     # @example Input with help text and error
     #   render Components::Preline::Input.new(
@@ -33,7 +45,12 @@ module Components
     #     label: "Biography",
     #     placeholder: "Tell us about yourself..."
     #   )
+    #
+    # @note Version 0.2.0 introduces model-aware binding for automatic value
+    #   population and error display without requiring a form builder.
     class Input < ::Components::Preline::PrelineComponent
+      # Supported HTML input types
+      # @return [Array<Symbol>] List of valid input types
       TYPES = %i[
         text password email number tel url search date datetime time
         month week color file hidden
@@ -41,8 +58,9 @@ module Components
 
       # Initialize a new Input component
       #
-      # @param form [ActionView::Helpers::FormBuilder] Rails form builder instance
-      # @param field [Symbol] Form field name
+      # @param form [ActionView::Helpers::FormBuilder, nil] Rails form builder instance (optional)
+      # @param model [ActiveRecord::Base, nil] Model instance for value binding (optional)
+      # @param field [Symbol] Form field name or attribute name when using model
       # @param type [Symbol] Input type (:text, :password, :email, :number, :tel, :url, :search, :date, :textarea, :select, :checkbox, :radio, etc.)
       # @param label [String, nil] Field label text
       # @param placeholder [String, nil] Placeholder text
@@ -56,9 +74,10 @@ module Components
       # @param wrapper_class [String] Additional CSS classes for the form group wrapper
       # @param attrs [Hash] Additional HTML attributes
       def initialize(
-        field:, form: nil,
+        field:, form: nil, model: nil,
         type: :text,
         label: nil,
+        value: nil,
         placeholder: nil,
         help_text: nil,
         required: false,
@@ -71,15 +90,23 @@ module Components
       )
         # Validate inputs
         @form = form
+        @model = model
         @field = validate_required!(field, 'field')
         @type = validate_inclusion!(type, 'type', TYPES + %i[textarea select checkbox radio])
         @label = label
+        
+        # Handle value: use provided value, or get from model, or get from form object
+        @value = value || (@model&.public_send(@field) if @model&.respond_to?(@field)) || (@form&.object&.public_send(@field) if @form&.respond_to?(:object) && @form.object&.respond_to?(@field))
+        
         @placeholder = placeholder
         @help_text = help_text
         @required = validate_boolean!(required, 'required')
         @disabled = validate_boolean!(disabled, 'disabled')
         @readonly = validate_boolean!(readonly, 'readonly')
-        @error = error
+        
+        # Handle error: use provided error, or get from model, or get from form object
+        @error = error || get_model_error
+        
         @input_class = validate_css_class!(input_class)
         @wrapper_class = validate_css_class!(wrapper_class)
 
@@ -90,6 +117,11 @@ module Components
         initialize_component(attrs)
       end
 
+      # Renders the complete input component including wrapper, label,
+      # input field, help text, and error messages.
+      #
+      # @return [void]
+      # @api public
       def view_template
         wrapper_attrs = component_attributes(additional_classes: build_wrapper_classes)
 
@@ -103,6 +135,11 @@ module Components
 
       private
 
+      # Renders the label element for the input field, using either
+      # Rails form builder label or a static label element.
+      #
+      # @return [void]
+      # @api private
       def render_label
         if @form.respond_to?(:label)
           code_path 'Renders Rails form label'
@@ -124,6 +161,11 @@ module Components
         end
       end
 
+      # Renders the actual input element using either Rails form builder
+      # methods or static HTML elements depending on availability.
+      #
+      # @return [void]
+      # @api private
       def render_input
         input_options = build_input_options
 
@@ -150,7 +192,8 @@ module Components
           # Fallback to plain HTML input
           input_attrs = input_options.merge(
             type: @type == :textarea ? nil : @type,
-            name: @field,
+            name: input_name,
+            value: @value,
             id: @field
           ).compact
 
@@ -162,6 +205,10 @@ module Components
         end
       end
 
+      # Renders a checkbox input with its associated label.
+      #
+      # @return [void]
+      # @api private
       def render_checkbox
         code_path 'Renders checkbox input'
         label(class: 'hs-checkbox') do
@@ -171,6 +218,10 @@ module Components
         end
       end
 
+      # Renders radio button inputs for each option provided.
+      #
+      # @return [void]
+      # @api private
       def render_radio
         code_path 'Renders radio input'
         @component_attrs[:options].each do |option|
@@ -182,14 +233,27 @@ module Components
         end
       end
 
+      # Renders help text below the input field.
+      #
+      # @return [void]
+      # @api private
       def render_help_text
         p(class: 'hs-form-help-text') { plain @help_text }
       end
 
+      # Renders error message for the input field.
+      #
+      # @return [void]
+      # @api private
       def render_error
         p(id: "#{@field}-error", class: 'hs-form-error') { plain @error }
       end
 
+      # Builds the options hash for the input element including
+      # classes, attributes, and ARIA properties.
+      #
+      # @return [Hash] Options hash for the input element
+      # @api private
       def build_input_options
         options = @component_attrs.except(:options, :select_options)
         options[:class] = build_input_classes
@@ -207,6 +271,10 @@ module Components
         options
       end
 
+      # Builds CSS classes for the input element based on type and state.
+      #
+      # @return [String] Space-separated CSS classes
+      # @api private
       def build_input_classes
         classes = case @type
                   when :textarea
@@ -222,8 +290,41 @@ module Components
         classes.join(' ').strip
       end
 
+      # Builds CSS classes for the wrapper div element.
+      #
+      # @return [Array<String>] Array of CSS classes
+      # @api private
       def build_wrapper_classes
         ['hs-form-group', @wrapper_class]
+      end
+      
+      # Retrieves error message from the model or form object if available.
+      #
+      # @return [String, nil] The first error message or nil
+      # @api private
+      # @since 0.2.0
+      def get_model_error
+        if @model && @model.respond_to?(:errors) && @model.errors[@field].present?
+          @model.errors[@field].first
+        elsif @form && @form.respond_to?(:object) && @form.object&.respond_to?(:errors) && @form.object.errors[@field].present?
+          @form.object.errors[@field].first
+        end
+      end
+      
+      # Generates the appropriate input name attribute for form submission,
+      # using Rails conventions for model binding when applicable.
+      #
+      # @return [String] The input name attribute value
+      # @api private
+      # @since 0.2.0
+      def input_name
+        if @model && !@form
+          # Generate Rails-style names for model binding
+          model_name = @model.model_name.param_key
+          "#{model_name}[#{@field}]"
+        else
+          @field.to_s
+        end
       end
     end
   end

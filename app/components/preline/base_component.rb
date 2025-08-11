@@ -4,6 +4,14 @@ module Components
   extend ::Phlex::Kit
 
   module Preline
+    # Base component class for all Preline UI components.
+    # Provides common functionality including security, validation, error handling,
+    # and Rails integration helpers. All Preline components inherit from this class
+    # to ensure consistent behavior and security practices.
+    #
+    # @abstract Subclass and implement {#view_template} to create a component
+    # @since 0.1.0
+    # @api public
     class BaseComponent < ::Phlex::HTML
       include ::Phlex::Helpers
 
@@ -23,7 +31,13 @@ module Components
       include ::Phlex::Preline::SecureAttributes
       include ::Phlex::Preline::Validatable
 
-      # Wrap the around_template callback to add component identification in development
+      # Wraps the template rendering with component identification comments in development
+      # and error handling. Provides error boundaries to prevent component failures from
+      # breaking the entire page.
+      #
+      # @yield The component's template rendering
+      # @return [void]
+      # @api public
       def around_template
         if defined?(Rails) && Rails.env.development?
           comment { "BEGIN #{self.class.name}" }
@@ -39,6 +53,12 @@ module Components
         handle_render_error(e)
       end
 
+      # Adds a code path comment for debugging and test coverage tracking.
+      # Only outputs in test environment to help verify which code paths are executed.
+      #
+      # @param path [String] Description of the code path being executed
+      # @return [void]
+      # @api private
       def code_path(path)
         return unless defined?(Rails) && Rails.env.test?
 
@@ -47,7 +67,12 @@ module Components
 
       private
 
-      # Common initialization pattern for components
+      # Common initialization pattern for components. Extracts and sanitizes standard
+      # HTML attributes including class, data attributes, ARIA attributes, and ID.
+      #
+      # @param attrs [Hash] HTML attributes to process
+      # @return [void]
+      # @api private
       def initialize_component(attrs = {})
         @custom_class = attrs.delete(:class)
         @data_attrs = attrs.delete(:data) || {}
@@ -58,7 +83,14 @@ module Components
         @extracted_attrs = extract_attributes(attrs)
       end
 
-      # Get merged attributes for rendering using Phlex 2.0 mix pattern
+      # Builds merged attributes for rendering using Phlex 2.0 mix pattern.
+      # Combines extracted attributes with additional classes and attributes,
+      # ensuring all values are properly sanitized.
+      #
+      # @param additional_classes [String, Array<String>, nil] CSS classes to add
+      # @param additional_attrs [Hash] Additional HTML attributes to merge
+      # @return [Hash] Sanitized and merged HTML attributes
+      # @api private
       def component_attributes(additional_classes: nil, additional_attrs: {})
         # Use the merge_attributes method from SecureAttributes
         # which already handles sanitization
@@ -76,17 +108,33 @@ module Components
         base_attrs.compact
       end
 
-      # Generate a unique component ID if not provided
+      # Generates a unique component ID if not provided.
+      # Uses SecureRandom to ensure uniqueness across component instances.
+      #
+      # @param prefix [String] Prefix for the generated ID
+      # @return [String] Unique component ID
+      # @api private
       def generate_id(prefix = 'component')
         @generate_id ||= "#{prefix}-#{SecureRandom.hex(4)}"
       end
 
-      # Cache generated IDs to prevent memory leaks
+      # Caches generated IDs to prevent memory leaks and ensure consistency.
+      # Returns the same ID for multiple calls within the same component instance.
+      #
+      # @param prefix [String] Prefix for the generated ID
+      # @return [String] Cached unique component ID
+      # @api private
       def cached_id(prefix = 'component')
         @cached_id ||= generate_id(prefix)
       end
 
-      # Handle rendering errors gracefully
+      # Handles rendering errors gracefully. In development, displays detailed error
+      # information. In production, logs the error and renders nothing to prevent
+      # breaking the entire page.
+      #
+      # @param error [StandardError] The error that occurred during rendering
+      # @return [void, nil]
+      # @api private
       def handle_render_error(error)
         if defined?(Rails) && Rails.env.development?
           # In development, show error details
@@ -106,7 +154,13 @@ module Components
         end
       end
 
-      # Simple icon rendering helper
+      # Renders a Font Awesome icon with proper sanitization.
+      # Strips potentially dangerous characters from icon names to prevent XSS.
+      #
+      # @param icon_name [String, Symbol] Name of the Font Awesome icon
+      # @param additional_classes [String, nil] Additional CSS classes for the icon
+      # @return [void, nil] Renders icon or returns nil if icon_name is invalid
+      # @api private
       def render_icon(icon_name, additional_classes: nil)
         return nil if icon_name.blank?
 
@@ -120,7 +174,12 @@ module Components
         i(class: classes.compact.join(' '))
       end
 
-      # Helper to map status values to badge variants
+      # Maps status values to appropriate badge color variants.
+      # Provides consistent color coding across the application.
+      #
+      # @param status [String, Symbol] Status value to map
+      # @return [Symbol] Badge variant symbol (:success, :warning, :primary, :gray)
+      # @api private
       def status_variant(status)
         status_variants = {
           'active' => :success,

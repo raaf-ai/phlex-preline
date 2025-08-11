@@ -16,10 +16,18 @@ module Phlex
       end
 
       # Validate that a value is included in allowed values
+      # Automatically converts strings to symbols if allowed_values contains only symbols
       def validate_inclusion!(value, name, allowed_values)
         return value if value.nil? # Allow nil for optional parameters
 
-        raise InvalidParameterError, "Invalid #{name}: #{value}. Allowed values: #{allowed_values.join(', ')}" unless allowed_values.include?(value)
+        # If value is a string and allowed_values are all symbols, convert value to symbol
+        if value.is_a?(String) && allowed_values.all? { |v| v.is_a?(Symbol) }
+          value = value.to_sym
+        end
+
+        unless allowed_values.include?(value)
+          raise InvalidParameterError, "Invalid #{name}: #{value}. Allowed values: #{allowed_values.join(', ')}"
+        end
 
         value
       end
