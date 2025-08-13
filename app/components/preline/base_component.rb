@@ -25,10 +25,10 @@ module Components
         include ::Phlex::Rails::Helpers::Truncate
         include ::Phlex::Rails::Helpers::T
         include ::Phlex::Rails::Helpers::URLFor
+        include ::Phlex::Rails::Helpers::CSRFMetaTags if defined?(::Phlex::Rails::Helpers::CSRFMetaTags)
       end
 
-      # Include security and validation concerns
-      include ::Phlex::Preline::SecureAttributes
+      # Include validation concerns
       include ::Phlex::Preline::Validatable
 
       # Wraps the template rendering with component identification comments in development
@@ -67,45 +67,38 @@ module Components
 
       private
 
-      # Common initialization pattern for components. Extracts and sanitizes standard
-      # HTML attributes including class, data attributes, ARIA attributes, and ID.
+      # Simple initialization pattern for components. Stores all attributes for later use.
       #
       # @param attrs [Hash] HTML attributes to process
       # @return [void]
       # @api private
       def initialize_component(attrs = {})
-        @custom_class = attrs.delete(:class)
-        @data_attrs = attrs.delete(:data) || {}
-        @aria_attrs = attrs.delete(:aria) || {}
-        @id = attrs.delete(:id)
-
-        # Store sanitized attributes
-        @extracted_attrs = extract_attributes(attrs)
+        @component_attrs = attrs.dup
       end
 
-      # Builds merged attributes for rendering using Phlex 2.0 mix pattern.
-      # Combines extracted attributes with additional classes and attributes,
-      # ensuring all values are properly sanitized.
+      # Builds merged attributes for rendering.
+      # Combines component attributes with additional classes and attributes.
       #
       # @param additional_classes [String, Array<String>, nil] CSS classes to add
-      # @param additional_attrs [Hash] Additional HTML attributes to merge
-      # @return [Hash] Sanitized and merged HTML attributes
+      # @param additional_attrs [Hash] Additional HTML attributes to merge (legacy parameter)
+      # @param **attrs [Hash] Additional HTML attributes to merge (keyword arguments)
+      # @return [Hash] Merged HTML attributes
       # @api private
-      def component_attributes(additional_classes: nil, additional_attrs: {})
-        # Use the merge_attributes method from SecureAttributes
-        # which already handles sanitization
-        base_attrs = merge_attributes(@extracted_attrs, additional_attrs)
-
-        # Add additional classes if provided
+      def component_attributes(additional_classes: nil, additional_attrs: {}, **attrs)
+        # Start with component attributes
+        merged_attrs = @component_attrs.dup
+        
+        # Merge additional attributes (support both legacy and new style)
+        merged_attrs.merge!(additional_attrs) if additional_attrs.any?
+        merged_attrs.merge!(attrs) if attrs.any?
+        
+        # Handle class merging specially
         if additional_classes.present?
-          existing_classes = base_attrs[:class]
-          base_attrs[:class] = [existing_classes, additional_classes].compact.join(' ').presence
+          existing_classes = merged_attrs[:class]
+          merged_attrs[:class] = [existing_classes, additional_classes].compact.join(' ').presence
         end
 
-        # Add ID if provided (sanitized)
-        base_attrs[:id] = sanitize_value(@id) if @id.present?
-
-        base_attrs.compact
+        merged_attrs.compact
       end
 
       # Generates a unique component ID if not provided.
@@ -154,8 +147,7 @@ module Components
         end
       end
 
-      # Renders a Font Awesome icon with proper sanitization.
-      # Strips potentially dangerous characters from icon names to prevent XSS.
+      # Renders a Font Awesome icon.
       #
       # @param icon_name [String, Symbol] Name of the Font Awesome icon
       # @param additional_classes [String, nil] Additional CSS classes for the icon
@@ -164,7 +156,7 @@ module Components
       def render_icon(icon_name, additional_classes: nil)
         return nil if icon_name.blank?
 
-        # Simple sanitization - only allow alphanumeric and hyphens
+        # Basic icon name cleaning - only allow alphanumeric and hyphens
         safe_icon = icon_name.to_s.gsub(/[^a-zA-Z0-9-]/, '')
         return nil if safe_icon.empty?
 

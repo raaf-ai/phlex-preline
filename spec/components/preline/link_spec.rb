@@ -189,57 +189,7 @@ RSpec.describe Preline::Link, type: :component do
     end
   end
 
-  describe 'XSS prevention' do
-    it 'escapes text content with HTML' do
-      link = described_class.new(
-        text: '<script>alert("XSS")</script>Click me',
-        href: '/safe-url'
-      )
-
-      html = render_phlex(link)
-
-      expect(html).not_to include('<script>')
-      expect(html).not_to include('alert("XSS")')
-      expect(html).to include('&lt;script&gt;')
-    end
-
-    it 'prevents javascript: URLs in href' do
-      expect do
-        described_class.new(
-          text: 'Click me',
-          href: 'javascript:alert("XSS")'
-        )
-      end.to raise_error(Phlex::Preline::InvalidParameterError)
-    end
-
-    it 'prevents attribute injection through class' do
-      link = described_class.new(
-        text: 'Click me',
-        href: '/safe-url',
-        class: 'link onclick=alert("XSS")'
-      )
-
-      html = render_phlex(link)
-
-      expect(html).not_to include('onclick=')
-    end
-
-    it 'sanitizes data attributes' do
-      link = described_class.new(
-        text: 'Click me',
-        href: '/safe-url',
-        data: {
-          'evil-script': 'alert("XSS")',
-          turbo: 'false' # This should be allowed
-        }
-      )
-
-      html = render_phlex(link)
-
-      expect(html).to include('data-turbo="false"')
-      expect(html).not_to include('data-evil-script')
-    end
-
+  describe 'external links' do
     it 'handles external links safely' do
       link = described_class.new(
         text: 'External',

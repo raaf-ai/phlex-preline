@@ -71,7 +71,7 @@ module Components
           code_path 'Renders form with custom URL'
         end
 
-        # For testing, render the form HTML directly as a string
+        # Build form action
         action = if @model
                    if @model.respond_to?(:persisted?) && @model.persisted?
                      "/#{@model.model_name.route_key}/#{@model.to_param}"
@@ -82,21 +82,53 @@ module Components
                    @url || '#'
                  end
 
-        # form_options already has properly formatted data attributes from component_attributes
-        form_attrs = form_options.merge(action: action, method: @method == :get ? 'get' : 'post')
+        # Build form attributes
+        form_attrs = form_options.merge(
+          action: action, 
+          method: @method == :get ? 'get' : 'post'
+        )
 
         # Add data-remote if not local
         form_attrs[:'data-remote'] = 'true' unless @local
 
         form(**form_attrs) do
-          # Add hidden fields for Rails forms
-          input(type: 'hidden', name: 'authenticity_token', value: 'test-token') if @method != :get
+          # Add CSRF token for non-GET requests (Rails-compatible)
+          if @method != :get && respond_to?(:csrf_token_tag)
+            raw csrf_token_tag
+          elsif @method != :get
+            # Fallback: manual CSRF token (works in test environment)
+            input(type: 'hidden', name: 'authenticity_token', value: csrf_token_value)
+          end
+          
+          # Add UTF-8 enforcer
           input(type: 'hidden', name: 'utf8', value: '✓')
 
-          input(type: 'hidden', name: '_method', value: @method.to_s) if @method && %i[get post].exclude?(@method)
+          # Add method override for non-GET/POST methods
+          if @method && %i[get post].exclude?(@method)
+            input(type: 'hidden', name: '_method', value: @method.to_s)
+          end
 
           # Yield self as form builder for compatibility
           yield(self) if block_given?
+        end
+      end
+
+      private
+
+      # Get CSRF token value
+      def csrf_token_value
+        if defined?(Rails) && Rails.application.respond_to?(:config) && Rails.application.config.respond_to?(:force_ssl)
+          # In Rails environment, try to get the real CSRF token
+          if respond_to?(:form_authenticity_token)
+            form_authenticity_token
+          elsif defined?(ActionController::Base)
+            ActionController::Base.new.send(:form_authenticity_token)
+          else
+            'csrf-token-placeholder'
+          end
+        else
+          # In test environment, use a test token
+          'test-token'
         end
       end
 
@@ -123,13 +155,10 @@ module Components
       private
 
       def build_form_options
-        # Get sanitized component attributes
+        # Get component attributes with form classes
         opts = component_attributes(additional_classes: build_classes)
 
-        # Don't re-add @data here as it's already been filtered through initialize_component
-
         code_path 'Renders form with custom HTTP method' if @method != :post
-
         code_path 'Renders form with remote submission' unless @local
 
         opts

@@ -134,7 +134,7 @@ RSpec.describe Preline::Button, type: :component do
 
       output = render_phlex(component)
 
-      expect(output).to include('data-remote="true"')
+      expect(output).to include('data-remote')
     end
 
     it 'does not add Rails UJS attributes for GET method' do

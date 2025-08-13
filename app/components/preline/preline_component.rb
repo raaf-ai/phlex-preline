@@ -56,53 +56,6 @@ module Components
       def aria_attributes(attributes = {})
         attributes.transform_keys { |key| "aria-#{key.to_s.dasherize}" }
       end
-
-      # Initializes the component with secure attribute handling.
-      # Extracts and stores class, data, and ARIA attributes separately
-      # for proper processing and sanitization.
-      #
-      # @param attrs [Hash] Component attributes to process
-      # @return [void]
-      # @api private
-      #
-      # @note This method overrides the parent implementation to provide
-      #   Preline-specific attribute handling
-      def initialize_component(attrs = {})
-        @custom_class = attrs.delete(:class)
-        @data_attrs = attrs.delete(:data) || {}
-        @aria_attrs = attrs.delete(:aria) || {}
-        @attrs = attrs
-      end
-
-      # Builds component attributes for rendering by merging extracted attributes
-      # with additional classes and attributes. Ensures all attributes are properly
-      # sanitized and classes are deduplicated.
-      #
-      # @param additional_classes [String, Array<String>] CSS classes to add
-      # @param additional_attrs [Hash] Additional HTML attributes to merge
-      # @return [Hash] Merged and sanitized HTML attributes ready for rendering
-      # @api private
-      #
-      # @example
-      #   component_attributes(
-      #     additional_classes: ['active', 'highlighted'],
-      #     additional_attrs: { role: 'button' }
-      #   )
-      def component_attributes(additional_classes: [], additional_attrs: {})
-        extracted = extract_attributes(@attrs)
-        attrs = merge_attributes(extracted, additional_attrs)
-
-        # Normalize additional_classes to array
-        additional_classes = Array(additional_classes).flatten.compact
-
-        # Add additional classes
-        if additional_classes.any?
-          existing_classes = attrs[:class].to_s.split
-          attrs[:class] = (existing_classes + additional_classes).uniq.join(' ')
-        end
-
-        attrs
-      end
     end
   end
 end

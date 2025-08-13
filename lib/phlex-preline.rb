@@ -3,7 +3,6 @@
 require 'phlex'
 require_relative 'preline/version'
 require_relative 'preline/errors'
-require_relative 'preline/secure_attributes'
 require_relative 'preline/validatable'
 require_relative 'components/preline'
 require_relative 'preline/engine' if defined?(Rails)

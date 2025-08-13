@@ -57,7 +57,7 @@ module Components
       #
       # @param form [ActionView::Helpers::FormBuilder] Rails form builder instance
       # @param field [Symbol] Form field name
-      # @param options [Array, Hash] Select options (array, hash for grouped options, or array of arrays for value/text pairs)
+      # @param options [Array, Hash] Select options (array, hash for grouped options, or array of arrays for [text, value] pairs using Rails convention)
       # @param label [String, nil] Field label text
       # @param prompt [String, nil] Prompt text for unselected state
       # @param selected [String, Array, nil] Pre-selected value(s)
@@ -266,8 +266,8 @@ module Components
         elsif options.is_a?(Array)
           options.each do |opt|
             if opt.is_a?(Array)
-              # Value/text pair
-              value, text = opt
+              # Rails convention: [display_text, value] pair
+              text, value = opt
               option(value: value, selected: value == selected_value) { plain text.to_s }
             else
               # Simple option
