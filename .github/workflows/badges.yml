@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Update CI badge
         run: echo "CI badge will be automatically shown via GitHub Actions status"
