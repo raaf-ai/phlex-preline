@@ -120,7 +120,7 @@ module Components
       def view_template
         code_path 'Renders breadcrumb component'
         nav(aria: { label: 'Breadcrumb' }) do
-          ol(**component_attributes(additional_classes: ['hs-breadcrumb'])) do
+          ol(**component_attributes(additional_classes: 'hs-breadcrumb')) do
             if block_given?
               yield(self)
               # Always render yielded items if we have any, regardless of whether they were added before or after yield

@@ -221,19 +221,19 @@ module Components
       def build_attributes
         attrs = {}
 
-        # Enhanced Rails UJS integration
+        # Enhanced Rails UJS and Turbo integration
         if @method && @method != :get
-          attrs['data-method'] = @method
+          attrs['data-turbo-method'] = @method
           attrs['rel'] = 'nofollow' # SEO protection for non-GET links
           
           # Add automatic confirm dialog for destructive actions
           if @method == :delete && !@confirm
-            attrs['data-confirm'] = 'Are you sure?'
+            attrs['data-turbo-confirm'] = 'Are you sure?'
           end
         end
         
-        # Support additional Rails UJS attributes
-        attrs['data-confirm'] = @confirm if @confirm
+        # Support additional Turbo attributes
+        attrs['data-turbo-confirm'] = @confirm if @confirm
         attrs['data-remote'] = @remote if @remote
 
         # Add aria-label for icon-only buttons

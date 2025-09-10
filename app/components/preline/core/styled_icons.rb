@@ -103,8 +103,9 @@ module Components
       end
     end
 
-    # Convenience method for icon stacks
-    class IconStack < ::Components::Preline::PrelineComponent
+    # Container for FontAwesome icon stacks
+    remove_const(:IconStackContainer) if const_defined?(:IconStackContainer)
+    class IconStackContainer < ::Components::Preline::PrelineComponent
       def initialize(size: :base, **attrs)
         @size = size
 
@@ -138,7 +139,9 @@ module Components
       end
     end
 
-    class StackedIcon < ::Components::Preline::PrelineComponent
+    # Individual icon for use within FontAwesome icon stacks
+    remove_const(:IconStackItem) if const_defined?(:IconStackItem)
+    class IconStackItem < ::Components::Preline::PrelineComponent
       def initialize(icon:, **attrs)
         @icon = icon
         @stack_size = attrs.delete(:stack_size) || 1 # 1 or 2
