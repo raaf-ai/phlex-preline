@@ -61,7 +61,7 @@ jobs:
         gem install phlex-preline-*.gem
 
     - name: Upload gem artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: gem
         path: preline-*.gem
