@@ -1694,8 +1694,12 @@
   }
 
   /* Pagination */
+  nav[aria-label="Pagination Navigation"] {
+    @apply flex flex-col items-center;
+  }
+
   .hs-pagination {
-    @apply flex items-center justify-between;
+    @apply flex items-center justify-center gap-0;
   }
 
   .hs-pagination-sm {
@@ -1707,16 +1711,17 @@
   }
 
   .hs-pagination-info {
-    @apply text-sm mb-4;
+    @apply text-xs mb-2 text-center;
     color: var(--theme-text-secondary);
   }
 
   .hs-pagination-item {
     @apply relative inline-flex items-center;
+    margin: 0 -1px;
   }
 
   .hs-pagination-link {
-    @apply relative inline-flex items-center px-4 py-2 text-sm font-medium border;
+    @apply relative inline-flex items-center px-2 py-1 text-xs font-medium border;
     color: var(--theme-text-secondary);
     background-color: var(--theme-bg-elevated);
     border-color: var(--theme-border-primary);
@@ -1753,7 +1758,19 @@
   }
 
   .hs-pagination-text {
-    @apply hidden sm:inline;
+    @apply hidden sm:inline ml-1;
+  }
+
+  .hs-pagination-compact {
+    @apply px-1 py-1 text-xs;
+  }
+
+  .hs-pagination-compact i {
+    @apply text-xs;
+  }
+
+  .hs-pagination-compact .hs-pagination-text {
+    @apply text-xs;
   }
 
   /* Links */
