@@ -22,7 +22,6 @@ export default class extends Controller {
   }
 
   connect() {
-    console.log('🔌 NAICS controller connecting')
     this.selectedCodes = new Set(this.getInitialSelectedCodes())
     this.selectedItems = new Map() // Store code -> {code, name} mapping
     this.searchTimeout = null
@@ -30,10 +29,7 @@ export default class extends Controller {
     
     // Initialize selectedItems from existing badges on page (server-rendered)
     this.initializeSelectedItemsFromBadges()
-    
-    console.log('📊 Initial selectedCodes:', Array.from(this.selectedCodes))
-    console.log('📊 Initial selectedItems:', Array.from(this.selectedItems.entries()))
-    
+
     this.initializeSelectionStates()
     this.updateDisplay()
     
@@ -63,20 +59,16 @@ export default class extends Controller {
 
   // Initialize selectedItems Map from existing server-rendered badges
   initializeSelectedItemsFromBadges() {
-    console.log('🏷️ Initializing selectedItems from existing badges')
-    
     // Look for existing badges in the selectedLabelsContainer
     if (this.hasSelectedLabelsContainerTarget) {
       const badges = this.selectedLabelsContainerTarget.querySelectorAll('.hs-badge[data-code]')
-      console.log('🔍 Found', badges.length, 'existing badges')
-      
+
       badges.forEach(badge => {
         const code = badge.dataset.code
         const name = badge.dataset.naicsName || badge.textContent.trim().replace('×', '').trim()
-        
+
         if (code && name) {
           this.selectedItems.set(code, { code: code, name: name })
-          console.log('✅ Added to selectedItems:', code, '→', name)
         }
       })
     }
@@ -255,32 +247,22 @@ export default class extends Controller {
   }
 
   removeSelection(event) {
-    console.log('🗑️ removeSelection called')
     event.preventDefault()
     const code = event.currentTarget.dataset.code
-    
-    console.log('🔍 Code to remove:', code)
-    console.log('📊 Current selectedCodes:', Array.from(this.selectedCodes))
-    console.log('📊 Current selectedItems:', Array.from(this.selectedItems.entries()))
-    
+
     if (code) {
       this.selectedCodes.delete(code)
       this.selectedItems.delete(code)
-      
-      console.log('✅ After removal - selectedCodes:', Array.from(this.selectedCodes))
-      console.log('✅ After removal - selectedItems:', Array.from(this.selectedItems.entries()))
-      
+
       this.updateDisplay()
       this.updateSelectionIndicators()
       this.updateHiddenInputs()
       this.updateDropdownVisibility()
-      
+
       // Update toggle text if no selections remain
       if (this.selectedCodes.size === 0 && this.hasToggleTextTarget) {
         this.toggleTextTarget.textContent = this.multipleValue ? 'Select industries' : 'Select industry'
       }
-    } else {
-      console.warn('⚠️ No code found for removal')
     }
   }
 
@@ -317,10 +299,9 @@ export default class extends Controller {
       this.selectedCodes.forEach(selectedCode => {
         // Validate selectedCode before using in CSS selector
         if (!selectedCode || typeof selectedCode !== 'string' || selectedCode.includes('"') || selectedCode.includes('[') || selectedCode.includes(']')) {
-          console.warn('Invalid NAICS code detected, skipping:', selectedCode)
           return
         }
-        
+
         const checkbox = this.element.querySelector(`input[data-code="${selectedCode}"]`)
         if (checkbox) {
           checkbox.checked = true

@@ -9,8 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
   fileUploadElements.forEach(element => {
     if (typeof HSFileUpload !== 'undefined') {
       HSFileUpload.getInstance(element, true);
-    } else {
-      console.warn('HSFileUpload not found. Please ensure Preline UI JavaScript is loaded.');
     }
   });
 });

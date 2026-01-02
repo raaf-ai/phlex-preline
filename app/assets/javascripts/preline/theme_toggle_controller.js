@@ -5,8 +5,6 @@ export default class extends Controller {
   static targets = ["icon", "dropdown"]
 
   connect() {
-    console.log('Theme toggle controller connected')
-    
     // Wait for theme utils to be available
     if (window.themeUtils) {
       this.initializeTheme()
@@ -61,7 +59,6 @@ export default class extends Controller {
   }
 
   initializeTheme() {
-    console.log('Initializing theme from controller')
     if (window.themeUtils) {
       const theme = window.themeUtils.getCurrentTheme()
       window.themeUtils.applyTheme(theme)
@@ -70,7 +67,6 @@ export default class extends Controller {
   }
 
   applyTheme(theme) {
-    console.log(`Applying theme from controller: ${theme}`)
     if (window.themeUtils) {
       window.themeUtils.applyTheme(theme)
       this.updateThemeColor(theme)
