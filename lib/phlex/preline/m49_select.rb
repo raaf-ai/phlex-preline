@@ -129,14 +129,33 @@ module Phlex
 
           # Hidden inputs container
           div(data: { "m49-select-target" => "hiddenInputs" }) do
-            @selected_regions.each do |region_id|
-              input(
+            @selected_regions.each_with_index do |region_id, index|
+              # Only set required on first hidden input to avoid multiple validation messages
+              input_attrs = {
                 type: "hidden",
                 name: @field_name,
                 value: region_id,
                 data: {
                   "m49-select-target" => "hiddenField",
                   region_id: region_id
+                }
+              }
+              # Add required attribute to first hidden input only
+              input_attrs[:required] = true if @required && index == 0
+
+              input(**input_attrs)
+            end
+
+            # If no regions selected yet but field is required, add a dummy hidden input
+            # with required attribute so FormValidator can detect it
+            if @selected_regions.empty? && @required
+              input(
+                type: "hidden",
+                name: @field_name,
+                value: "",
+                required: true,
+                data: {
+                  "m49-select-target" => "hiddenField"
                 }
               )
             end
