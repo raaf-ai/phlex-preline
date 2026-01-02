@@ -20,11 +20,13 @@ en:
       of: " of "
       results: " results"
       first_page: "First page"
+      first: "First"
       previous_page: "Previous page"
       previous: "Previous"
       next_page: "Next page"
       next: "Next"
       last_page: "Last page"
+      last: "Last"
       ellipsis: "..."
     
     modal:

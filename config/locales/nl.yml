@@ -20,11 +20,13 @@ nl:
       of: " van "
       results: " resultaten"
       first_page: "Eerste pagina"
+      first: "Eerste"
       previous_page: "Vorige pagina"
       previous: "Vorige"
       next_page: "Volgende pagina"
       next: "Volgende"
       last_page: "Laatste pagina"
+      last: "Laatste"
       ellipsis: "..."
     
     modal:
