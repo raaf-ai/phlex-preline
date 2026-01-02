@@ -101,7 +101,7 @@ module Components
         tooltip_attrs = component_attributes(additional_classes: classes)
 
         # Add data attributes
-        tooltip_attrs[:'data-hs-tooltip-content'] = @content unless @html
+        tooltip_attrs[:'data-hs-tooltip-content'] = safe_tooltip_content(@content) unless @html
         tooltip_attrs[:'data-hs-tooltip-placement'] = PLACEMENTS[@placement] || @placement
         tooltip_attrs[:'data-hs-tooltip-trigger'] = TRIGGERS[@trigger] if @trigger != :hover
         tooltip_attrs[:'data-hs-tooltip-offset'] = @offset if @offset != 10
@@ -168,6 +168,24 @@ module Components
       def strip_html_tags(string)
         # Basic HTML tag stripping for when Rails sanitizer is not available
         string.to_s.gsub(/<[^>]*>/, '')
+      end
+
+      def safe_tooltip_content(content)
+        return content if content.blank?
+
+        # If content contains HTML entities, decode them to prevent JavaScript errors
+        if content.to_s.include?('&#') || content.to_s.include?('&amp;') || content.to_s.include?('&lt;')
+          # Use Rails/CGI built-in HTML entity decoding
+          if defined?(ActionController::Base) && ActionController::Base.respond_to?(:helpers)
+            # Use Rails sanitizer to strip tags and decode entities
+            ActionController::Base.helpers.strip_tags(content.to_s)
+          else
+            # Fallback to CGI for HTML entity decoding
+            CGI.unescapeHTML(content.to_s)
+          end
+        else
+          content
+        end
       end
     end
   end

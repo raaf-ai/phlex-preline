@@ -198,7 +198,7 @@ module Components
           ).compact
 
           if @type == :textarea
-            textarea(**input_attrs)
+            textarea(**input_attrs.except(:value)) { @value }
           else
             input(**input_attrs)
           end

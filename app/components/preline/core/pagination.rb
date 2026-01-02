@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'uri'
+
 module Components
   module Preline
     # A Preline UI pagination component for navigating through pages.
@@ -125,10 +127,12 @@ module Components
         li(class: 'hs-pagination-item') do
           a(
             href: page_url(1),
-            class: 'hs-pagination-link',
+            class: 'hs-pagination-link hs-pagination-compact',
+            data: { turbo: 'false' },
             aria: { label: I18n.t('preline.pagination.first_page', default: 'First page') }
           ) do
-            i(class: 'fas fa-angle-double-left')
+            render double_chevron_left_icon
+            span(class: 'hs-pagination-text') { I18n.t('preline.pagination.first', default: 'First') }
           end
         end
       end
@@ -141,15 +145,16 @@ module Components
             a(
               href: page_url(@current_page - 1),
               class: 'hs-pagination-link',
+              data: { turbo: 'false' },
               aria: { label: I18n.t('preline.pagination.previous_page', default: 'Previous page') }
             ) do
-              i(class: 'fas fa-angle-left')
+              render chevron_left_icon
               span(class: 'hs-pagination-text') { I18n.t('preline.pagination.previous', default: 'Previous') }
             end
           else
             code_path 'Renders disabled previous button at first page'
             span(class: 'hs-pagination-link hs-pagination-disabled') do
-              i(class: 'fas fa-angle-left')
+              render chevron_left_icon
               span(class: 'hs-pagination-text') { I18n.t('preline.pagination.previous', default: 'Previous') }
             end
           end
@@ -181,7 +186,8 @@ module Components
           else
             a(
               href: page_url(page),
-              class: 'hs-pagination-link'
+              class: 'hs-pagination-link',
+              data: { turbo: 'false' }
             ) { page.to_s }
           end
         end
@@ -202,16 +208,17 @@ module Components
             a(
               href: page_url(@current_page + 1),
               class: 'hs-pagination-link',
+              data: { turbo: 'false' },
               aria: { label: I18n.t('preline.pagination.next_page', default: 'Next page') }
             ) do
               span(class: 'hs-pagination-text') { I18n.t('preline.pagination.next', default: 'Next') }
-              i(class: 'fas fa-angle-right')
+              render chevron_right_icon
             end
           else
             code_path 'Renders disabled next button at last page'
             span(class: 'hs-pagination-link hs-pagination-disabled') do
               span(class: 'hs-pagination-text') { I18n.t('preline.pagination.next', default: 'Next') }
-              i(class: 'fas fa-angle-right')
+              render chevron_right_icon
             end
           end
         end
@@ -222,10 +229,12 @@ module Components
         li(class: 'hs-pagination-item') do
           a(
             href: page_url(@total_pages),
-            class: 'hs-pagination-link',
+            class: 'hs-pagination-link hs-pagination-compact',
+            data: { turbo: 'false' },
             aria: { label: I18n.t('preline.pagination.last_page', default: 'Last page') }
           ) do
-            i(class: 'fas fa-angle-double-right')
+            span(class: 'hs-pagination-text') { I18n.t('preline.pagination.last', default: 'Last') }
+            render double_chevron_right_icon
           end
         end
       end
@@ -258,8 +267,33 @@ module Components
         return '#' unless @path
 
         query_params = @params.merge(page: page)
-        query_string = query_params.map { |k, v| "#{k}=#{v}" }.join('&')
+        query_string = URI.encode_www_form(query_params)
         query_string.empty? ? @path : "#{@path}?#{query_string}"
+      end
+
+      # SVG icon helper methods
+      def double_chevron_left_icon
+        svg(class: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20", xmlns: "http://www.w3.org/2000/svg") do |s|
+          s.path(fill_rule: "evenodd", d: "M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414zm-6 0a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L5.414 10l4.293 4.293a1 1 0 010 1.414z", clip_rule: "evenodd", transform: "rotate(180 10 10)")
+        end
+      end
+
+      def chevron_left_icon
+        svg(class: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20", xmlns: "http://www.w3.org/2000/svg") do |s|
+          s.path(fill_rule: "evenodd", d: "M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z", clip_rule: "evenodd")
+        end
+      end
+
+      def chevron_right_icon
+        svg(class: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20", xmlns: "http://www.w3.org/2000/svg") do |s|
+          s.path(fill_rule: "evenodd", d: "M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z", clip_rule: "evenodd")
+        end
+      end
+
+      def double_chevron_right_icon
+        svg(class: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20", xmlns: "http://www.w3.org/2000/svg") do |s|
+          s.path(fill_rule: "evenodd", d: "M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0zm-6 0a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z", clip_rule: "evenodd")
+        end
       end
     end
   end

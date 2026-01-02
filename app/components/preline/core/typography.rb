@@ -18,7 +18,7 @@ module Components
     #     size: "4xl",
     #     weight: :bold,
     #     color: :primary
-    #   ) { "Welcome to ProspectRadar" }
+    #   ) { "Welcome to ProspectsRadar" }
     #
     # @example Muted small text
     #   Typography(
