@@ -27,7 +27,7 @@ jobs:
       run: brakeman --no-pager --no-exit-on-warn --no-exit-on-error --format json --output brakeman-output.json || true
 
     - name: Upload Brakeman results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: brakeman-results
         path: brakeman-output.json
